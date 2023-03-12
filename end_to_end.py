@@ -9,7 +9,6 @@ from dlgo.data.parallel_processor import GoDataProcessor
 from dlgo.encoders.simple import SimpleEncoder
 from dlgo.httpfrontend import get_web_app
 from dlgo.networks import small
-from dlgo import kerasutil
 
 
 def main():
@@ -18,7 +17,16 @@ def main():
     encoder = SimpleEncoder((go_board_rows, go_board_cols))
     processor = GoDataProcessor(encoder=encoder.name())
 
-    X, y = processor.load_go_data(num_samples=10)
+    generator = processor.load_go_data('train', 100, use_generator=True)
+    batch_size = 10
+    num_classes = 19*19
+    num_samples = generator.get_num_samples(batch_size=batch_size, num_classes=num_classes)
+    print(num_samples)
+    data_gen = generator.generate(batch_size=batch_size, num_classes=num_classes)
+    for i in range(num_samples // batch_size):
+        X, y = next(data_gen)
+
+    # X, y = processor.load_go_data(num_samples=10)
 
     input_shape = (encoder.num_planes, go_board_rows, go_board_cols)
     model = Sequential()
