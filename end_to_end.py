@@ -22,6 +22,7 @@ def main():
     num_classes = 19*19
     num_samples = generator.get_num_samples(batch_size=batch_size, num_classes=num_classes)
     print(num_samples)
+    X, y = [], []
     data_gen = generator.generate(batch_size=batch_size, num_classes=num_classes)
     for i in range(num_samples // batch_size):
         X, y = next(data_gen)
@@ -39,7 +40,6 @@ def main():
     model.fit(X, y, batch_size=128, epochs=1, verbose=1)
 
     deep_learning_bot = DeepLearningAgent(model, encoder)
-    # os.makedirs(os.path.dirname("./agents/"), exist_ok=True)
 
     deep_learning_bot.serialize(h5py.File("./checkpoints/small_model_epoch_60.h5", "w"))
 
