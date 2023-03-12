@@ -31,14 +31,12 @@ def main():
     model.fit(X, y, batch_size=128, epochs=1, verbose=1)
 
     deep_learning_bot = DeepLearningAgent(model, encoder)
-    os.makedirs(os.path.dirname("./agents/"), exist_ok=True)
+    # os.makedirs(os.path.dirname("./agents/"), exist_ok=True)
 
-    model_file = deep_learning_bot.serialize(h5py.File("./agents/deep_bot.h5", "w"))
-    deep_learning_bot.save(model_file)
+    deep_learning_bot.serialize(h5py.File("./checkpoints/small_model_epoch_60.h5", "w"))
 
-    model_file = h5py.File("./agents/deep_bot.h5", "r")
-    bot_from_file = deep_learning_bot.load(model_file)
-    # bot_from_file = deep_learning_bot.load(model_file)
+    model_file = h5py.File("./checkpoints/small_model_epoch_60.h5", "r")
+    bot_from_file = load_prediction_agent(model_file)
 
     web_app = get_web_app({'predict': bot_from_file})
     web_app.run()

@@ -11,7 +11,7 @@ from keras.optimizers import Adadelta
 def main():
     go_board_rows, go_board_cols = 19, 19
     num_classes = go_board_rows * go_board_cols
-    num_games = 100
+    num_games = 10000
 
     encoder = OnePlaneEncoder((go_board_rows, go_board_cols))
     processor = GoDataProcessor(encoder=encoder.name())
@@ -26,7 +26,7 @@ def main():
     model.add(Dense(num_classes, activation='softmax'))
     adadelta = Adadelta()
     model.compile(loss='categorical_crossentropy', optimizer=adadelta, metrics=['accuracy'])
-    epochs = 150
+    epochs = 180
     batch_size = 128
     model.fit(
         generator.generate(batch_size, num_classes),
@@ -35,7 +35,7 @@ def main():
         validation_data=test_generator.generate(batch_size, num_classes),
         validation_steps=test_generator.get_num_samples() / batch_size,
         callbacks=[
-            ModelCheckpoint('../checkpoints/small_model_epoch_{epoch}.h5')
+            ModelCheckpoint('checkpoints/small_model_epoch_{epoch}.h5')
         ])
     model.evaluate(
         test_generator.generate(batch_size, num_classes),
