@@ -1,8 +1,7 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import os
 import glob
 import os.path
+from pathlib import Path
 import tarfile
 import gzip
 import shutil
@@ -28,11 +27,19 @@ def worker(jobinfo):
         raise Exception('>>> Exiting child process.')
 
 
+def locate_data_directory():
+    path = Path(__file__)
+    project_lvl_path = path.parents[2]
+    data_directory_name = 'data'
+    data_directory = project_lvl_path.joinpath(data_directory_name)
+    return str(data_directory)
+
+
 class GoDataProcessor:
     def __init__(self, encoder='simple', data_directory='data'):
         self.encoder_string = encoder
         self.encoder = get_encoder_by_name(encoder, 19)
-        self.data_dir = data_directory
+        self.data_dir = locate_data_directory()
 
     def load_go_data(self, data_type='train', num_samples=1000,
                      use_generator=False):

@@ -47,14 +47,15 @@ class DeepLearningAgent(Agent):
         h5file['encoder'].attrs['board_width'] = self.encoder.board_width
         h5file['encoder'].attrs['board_height'] = self.encoder.board_height
         h5file.create_group('model')
-        kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
+
+        kerasutil.save_model_to_hdf5_group(self.model, h5file)
 
     def diagnostics(self):
         return {'value': self.last_state_value}
 
 
 def load_prediction_agent(h5file):
-    model = kerasutil.load_model_from_hdf5_group(h5file['model'])
+    model = kerasutil.load_model_from_hdf5_group(h5file)
     encoder_name = h5file['encoder'].attrs['name']
     if not isinstance(encoder_name, str):
         encoder_name = encoder_name.decode('ascii')

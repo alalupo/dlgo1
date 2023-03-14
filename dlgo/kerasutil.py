@@ -7,34 +7,38 @@ import keras
 from keras.models import load_model, save_model
 
 
-def save_model_to_hdf5_group(model, f):
+def save_model_to_hdf5_group(model, h5file):
     # Use Keras save_model to save the full model (including optimizer
     # state) to a file.
     # Then we can embed the contents of that HDF5 file inside ours.
-    tempfd, tempfname = tempfile.mkstemp(prefix='tmp-kerasmodel')
+    tempfd, tempfname = tempfile.mkstemp(prefix='tmp-kerasmodel', dir='.', suffix='.h5')
     try:
         os.close(tempfd)
+        # save the model to a tmp file
         save_model(model, tempfname, save_format='h5')
+        # serialize the file
         serialized_model = h5py.File(tempfname, 'r')
+        # copy the serialized model to the group of the h5py file that was previously created as kerasmodel group
         root_item = serialized_model.get('/')
-        serialized_model.copy(root_item, f, 'kerasmodel')
+        serialized_model.copy(root_item, h5file, 'kerasmodel')
         serialized_model.close()
     finally:
         os.unlink(tempfname)
 
 
-def load_model_from_hdf5_group(f, custom_objects=None):
+def load_model_from_hdf5_group(h5file, custom_objects=None):
     # Extract the model into a temporary file. Then we can use Keras
     # load_model to read it.
-    tempfd, tempfname = tempfile.mkstemp(prefix='tmp-kerasmodel')
+    tempfd, tempfname = tempfile.mkstemp(prefix='tmp-kerasmodel', dir='.', suffix='.h5')
     try:
         os.close(tempfd)
         serialized_model = h5py.File(tempfname, 'w')
-        root_item = f.get('kerasmodel')
+        root_item = h5file.get('kerasmodel')
+        # root_item = h5file.get('/')
         for attr_name, attr_value in root_item.attrs.items():
             serialized_model.attrs[attr_name] = attr_value
         for k in root_item.keys():
-            f.copy(root_item.get(k), serialized_model, k)
+            h5file.copy(root_item.get(k), serialized_model, k)
         serialized_model.close()
         return load_model(tempfname, custom_objects=custom_objects)
     finally:

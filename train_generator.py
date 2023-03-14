@@ -5,13 +5,12 @@ from dlgo.networks import small
 from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.callbacks import ModelCheckpoint
-from keras.optimizers import Adadelta
 
 
 def main():
     go_board_rows, go_board_cols = 19, 19
     num_classes = go_board_rows * go_board_cols
-    num_games = 10000
+    num_games = 1000
 
     encoder = OnePlaneEncoder((go_board_rows, go_board_cols))
     processor = GoDataProcessor(encoder=encoder.name())
@@ -24,9 +23,9 @@ def main():
     for layer in network_layers:
         model.add(layer)
     model.add(Dense(num_classes, activation='softmax'))
-    adadelta = Adadelta()
-    model.compile(loss='categorical_crossentropy', optimizer=adadelta, metrics=['accuracy'])
-    epochs = 180
+    model.compile(loss='categorical_crossentropy', optimizer='adadelta', metrics=['accuracy'])
+
+    epochs = 50
     batch_size = 128
     model.fit(
         generator.generate(batch_size, num_classes),
