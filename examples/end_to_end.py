@@ -19,19 +19,10 @@ def main():
     encoder = SimpleEncoder((go_board_rows, go_board_cols))
     processor = GoDataProcessor(encoder=encoder.name())
 
-    # generator = processor.load_go_data('train', 100, use_generator=True)
-    # batch_size = 128
-    # num_samples = generator.get_num_samples(batch_size=batch_size, num_classes=nb_classes)
-    # print(num_samples)
-    # X, y = [], []
-    # data_gen = generator.generate(batch_size=batch_size, num_classes=nb_classes)
-    # for i in range(num_samples // batch_size):
-    #     X, y = next(data_gen)
-
     generator = processor.load_go_data('train', 100, use_generator=True)
     batch_size = 128
     num_samples = generator.get_num_samples(batch_size=batch_size, num_classes=nb_classes)
-    print(num_samples)
+    print(f'The number of samples: {num_samples}')
     X, y = [], []
     data_gen = generator.generate(batch_size=batch_size, num_classes=nb_classes)
     for i in range(num_samples // batch_size):
@@ -48,7 +39,8 @@ def main():
     network_layers = small.layers(input_shape)
     for layer in network_layers:
         model.add(layer)
-    model.add(Dense(nb_classes, activation='softmax'))
+    model.add(Dense(nb_classes, activation='softmax', name='output_layer'))
+    print(model.summary())
     model.compile(loss='categorical_crossentropy', optimizer='adadelta', metrics=['accuracy'])
 
     model.fit(X, y, batch_size=128, epochs=1, verbose=1)

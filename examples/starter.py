@@ -17,46 +17,35 @@ from dlgo import kerasutil
 
 def main():
     go_board_rows, go_board_cols = 19, 19
-    # nb_classes = go_board_rows * go_board_cols
     encoder = SimpleEncoder((go_board_rows, go_board_cols))
-    # processor = GoDataProcessor(encoder=encoder.name())
-    #
-    # X, y = processor.load_go_data(num_samples=10)
-    #
-    # input_shape = (encoder.num_planes, go_board_rows, go_board_cols)
-    # model = Sequential()
-    # network_layers = small.layers(input_shape)
-    # for layer in network_layers:
-    #     model.add(layer)
-    # model.add(Dense(nb_classes, activation='softmax'))
-    # model.compile(loss='categorical_crossentropy', optimizer='adadelta', metrics=['accuracy'])
-    #
-    # model.fit(X, y, batch_size=128, epochs=1, verbose=1)
 
     path = Path(__file__)
     project_lvl_path = path.parents[1]
-    data_directory_name = 'agents'
+    data_directory_name = 'checkpoints'
     data_directory = project_lvl_path.joinpath(data_directory_name)
-    filename = 'deep_bot.h5'
-    newname = 'deep_bot_new.h5'
+    filename = 'better_small_model_epoch_50.h5'
     file_path = str(data_directory.joinpath(filename))
     if os.path.exists(file_path):
         print(f"{file_path} exists.")
     else:
         raise FileNotFoundError
 
-    model = load_model(file_path)
+    h5file = h5py.File(file_path)
+    if h5file.__bool__():
+        h5file.close()
+    model_file = h5py.File(file_path, "r")
 
-    file_path = str(data_directory.joinpath(newname))
-    if os.path.exists(file_path):
-        print(f"{file_path} exists.")
-    else:
-        raise FileNotFoundError
-
+    model = kerasutil.load_model_from_hdf5_group(model_file)
+    print(model.summary())
+    if model_file.__bool__():
+        model_file.close()
     deep_learning_bot = DeepLearningAgent(model, encoder)
+
     model_file = h5py.File(file_path, "w")
     deep_learning_bot.serialize(model_file)
 
+    if model_file.__bool__():
+        model_file.close()
     model_file = h5py.File(file_path, "r")
     bot_from_file = load_prediction_agent(model_file)
 
