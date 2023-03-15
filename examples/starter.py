@@ -23,7 +23,7 @@ def main():
     project_lvl_path = path.parents[1]
     data_directory_name = 'checkpoints'
     data_directory = project_lvl_path.joinpath(data_directory_name)
-    filename = 'better_small_model_epoch_50.h5'
+    filename = 'simple_large_model_epoch_7.h5'
     file_path = str(data_directory.joinpath(filename))
     if os.path.exists(file_path):
         print(f"{file_path} exists.")
@@ -35,7 +35,7 @@ def main():
         h5file.close()
     model_file = h5py.File(file_path, "r")
 
-    model = kerasutil.load_model_from_hdf5_group(model_file)
+    model = load_model(model_file)
     print(model.summary())
     if model_file.__bool__():
         model_file.close()
