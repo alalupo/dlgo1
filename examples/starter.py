@@ -23,7 +23,7 @@ def main():
     project_lvl_path = path.parents[1]
     data_directory_name = 'checkpoints'
     data_directory = project_lvl_path.joinpath(data_directory_name)
-    filename = 'simple_large_model_epoch_7.h5'
+    filename = 'simple_small_model_epoch_4p_5.h5'
     file_path = str(data_directory.joinpath(filename))
     if os.path.exists(file_path):
         print(f"{file_path} exists.")

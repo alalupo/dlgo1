@@ -8,6 +8,7 @@ from dlgo.networks import network_types
 from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.callbacks import ModelCheckpoint
+import tensorflow as tf
 
 
 def locate_directory():
@@ -30,14 +31,13 @@ def main():
     encoder = SimpleEncoder((rows, cols))
     input_shape = (encoder.num_planes, rows, cols)
     network = network_types.SmallNetwork(input_shape)
-    num_games = 100
+    num_games = 250
     epochs = 5
     optimizer = 'adadelta'
     batch_size = 128
     trainer = Trainer(network, encoder, num_games, epochs, rows, cols)
     trainer.build_model()
     trainer.train_model(optimizer, batch_size)
-    print(trainer.model.summary())
 
 
 class Trainer:
@@ -56,6 +56,7 @@ class Trainer:
         for layer in network_layers:
             model.add(layer)
         model.add(Dense(self.num_classes, activation='softmax'))
+        print(model.summary())
         return model
 
     def train_model(self, optimizer='adadelta', batch_size=128):
@@ -66,7 +67,8 @@ class Trainer:
         encoder_name = self.encoder.name()
         network_name = self.network.name
 
-        self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        # self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
 
         self.model.fit(
             generator.generate(batch_size, self.num_classes),
@@ -78,9 +80,12 @@ class Trainer:
                 ModelCheckpoint(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_model_epoch_{epoch}.h5')
             ])
 
-        self.model.evaluate(
+        score = self.model.evaluate(
             test_generator.generate(batch_size, self.num_classes),
             steps=test_generator.get_num_samples() / batch_size)
+
+        print('Test loss:', score[0])
+        print('Test accuracy:', score[1])
 
 
 if __name__ == '__main__':
