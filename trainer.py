@@ -30,9 +30,9 @@ def main():
     rows, cols = 19, 19
     encoder = SimpleEncoder((rows, cols))
     input_shape = (encoder.num_planes, rows, cols)
-    network = network_types.SmallNetwork(input_shape)
+    network = network_types.MediumNetwork(input_shape)
     num_games = 250
-    epochs = 5
+    epochs = 25
     optimizer = 'adadelta'
     batch_size = 128
     trainer = Trainer(network, encoder, num_games, epochs, rows, cols)
