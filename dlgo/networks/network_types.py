@@ -62,7 +62,7 @@ class MediumNetwork:
             Conv2D(64, (3, 3), data_format=self.channels_format),
             Activation('relu'),
 
-            Dropout(rate=0.25),
+            Dropout(rate=0.5),
 
             ZeroPadding2D((1, 1), data_format=self.channels_format),
             Conv2D(64, (3, 3), data_format=self.channels_format),
