@@ -91,13 +91,11 @@ class Trainer:
         print('Test loss:', score[0])
         print('Test accuracy:', score[1])
 
-        # serialize model to JSON
-        model_json = self.model.to_json()
-        with open(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_' + 'model.json', "w") as json_file:
-            json_file.write(model_json)
-        # serialize weights to HDF5
-        # self.model.save_weights("model.h5")
-        print("Saved model to disk")
+        # # serialize model to JSON
+        # model_json = self.model.to_json()
+        # with open(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_' + 'model.json', "w") as json_file:
+        #     json_file.write(model_json)
+        # print("Saved model to disk")
 
 
 if __name__ == '__main__':
