@@ -1,13 +1,7 @@
 import numpy as np
-import os
-import tempfile
-import h5py
-
-from keras.models import load_model, save_model
 
 from dlgo.agent.base import Agent
 from dlgo.agent.helpers import is_point_an_eye
-from dlgo import encoders
 from dlgo.encoders import base
 from dlgo import goboard_fast
 from dlgo import kerasutil

@@ -1,5 +1,3 @@
-from __future__ import print_function
-# tag::play_local_imports[]
 import subprocess
 import re
 import h5py
@@ -12,11 +10,10 @@ from dlgo.gtp.board import gtp_position_to_coords, coords_to_gtp_position
 from dlgo.gtp.utils import SGFWriter
 from dlgo.utils import print_board
 from dlgo.scoring import compute_game_result
-# end::play_local_imports[]
+
 # TODO: py3 problems with strings
 
 
-# tag::play_local_init[]
 class LocalGtpBot:
 
     def __init__(self, go_bot, termination=None, handicap=0,
@@ -54,9 +51,7 @@ class LocalGtpBot:
 # <3> At the end we write the the game to the provided file in SGF format
 # <4> Our opponent will either be GNU Go or Pachi.
 # <5> We read and write GTP commands from the command line.
-# end::play_local_init[]
 
-# tag::play_local_commands[]
     def send_command(self, cmd):
         self.gtp_stream.stdin.write(cmd.encode('utf-8'))
 
@@ -74,9 +69,7 @@ class LocalGtpBot:
     def command_and_response(self, cmd):
         self.send_command(cmd)
         return self.get_response()
-# end::play_local_commands[]
 
-# tag::play_local_run[]
     def run(self):
         self.command_and_response("boardsize 19\n")
         self.set_handicap()
@@ -95,9 +88,7 @@ class LocalGtpBot:
                 self.game_state = self.game_state.apply_move(move)
                 sgf_handicap = sgf_handicap + "[" + self.sgf.coordinates(move) + "]"
             self.sgf.append(sgf_handicap + "\n")
-# end::play_local_run[]
 
-# tag::play_local_play[]
     def play(self):
         while not self._stopped:
             if self.game_state.next_player == self.our_color:
@@ -108,9 +99,7 @@ class LocalGtpBot:
             print_board(self.game_state.board)
             print("Estimated result: ")
             print(compute_game_result(self.game_state))
-# end::play_local_play[]
 
-# tag::play_local_our[]
     def play_our_move(self):
         move = self.bot.select_move(self.game_state)
         self.game_state = self.game_state.apply_move(move)
@@ -127,9 +116,7 @@ class LocalGtpBot:
             self.command_and_response("play {} {}\n".format(our_name, pos))
             sgf_move = self.sgf.coordinates(move)
         self.sgf.append(";{}[{}]\n".format(our_letter, sgf_move))
-# end::play_local_our[]
 
-# tag::play_local_their[]
     def play_their_move(self):
         their_name = self.their_color.name
         their_letter = their_name[0].upper()
@@ -147,7 +134,6 @@ class LocalGtpBot:
             move = gtp_position_to_coords(pos)
             self.game_state = self.game_state.apply_move(move)
             self.sgf.append(";{}[{}]\n".format(their_letter, self.sgf.coordinates(move)))
-# end::play_local_their[]
 
 
 if __name__ == "__main__":

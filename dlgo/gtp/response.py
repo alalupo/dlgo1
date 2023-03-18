@@ -6,7 +6,6 @@ __all__ = [
 ]
 
 
-# tag::gtp_response[]
 class Response:
     def __init__(self, status, body):
         self.success = status
@@ -35,4 +34,4 @@ def serialize(gtp_command, gtp_response):  # <4>
 # <2> Making an error GTP response.
 # <3> Converting a Python boolean into GTP.
 # <4> Serialize a GTP response as a string.
-# end::gtp_response[]
+

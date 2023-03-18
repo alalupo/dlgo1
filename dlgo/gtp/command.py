@@ -11,7 +11,6 @@ __all__ = [
 ]
 
 
-# tag::gtp_command[]
 class Command:
 
     def __init__(self, sequence, name, args):
@@ -29,7 +28,6 @@ class Command:
 
     def __str__(self):
         return repr(self)
-# end::gtp_command[]
 
 
 """Parse a GTP protocol line into a Command object.
@@ -40,14 +38,13 @@ Command(999, 'play', ('white', 'D4'))
 """
 
 
-# tag::parse_command[]
 def parse(command_string):
     pieces = command_string.split()
     try:
-        sequence = int(pieces[0]) # <1>
+        sequence = int(pieces[0])
         pieces = pieces[1:]
-    except ValueError:  # <2>
+    except ValueError:
         sequence = None
     name, args = pieces[0], pieces[1:]
     return Command(sequence, name, args)
-# end::parse_command[]
+

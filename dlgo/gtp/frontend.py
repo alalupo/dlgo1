@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-# tag::gtp_frontend_imports[]
 import sys
 
 from dlgo.gtp import command, response
@@ -7,13 +5,11 @@ from dlgo.gtp.board import gtp_position_to_coords, coords_to_gtp_position
 from dlgo.goboard_fast import GameState, Move
 from dlgo.agent.termination import TerminationAgent
 from dlgo.utils import print_board
-# end::gtp_frontend_imports[]
 
 __all__ = [
     'GTPFrontend',
 ]
 
-# Fixed handicap placement as defined in GTP spec.
 
 """Go Text Protocol frontend for a bot.
 
@@ -21,7 +17,6 @@ Handles parsing GTP commands and formatting responses.
 Only supports 19x19 boards and fixed handicaps.
 """
 
-# tag::gtp_frontend_init[]
 HANDICAP_STONES = {
     2: ['D4', 'Q16'],
     3: ['D4', 'Q16', 'D16'],
@@ -57,9 +52,7 @@ class GTPFrontend:
             'protocol_version': self.handle_protocol_version,
             'quit': self.handle_quit,
         }
-# end::gtp_frontend_init[]
 
-# tag::gtp_frontend_run[]
     def run(self):
         while not self._stopped:
             input_line = self._input.readline().strip()
@@ -71,9 +64,7 @@ class GTPFrontend:
     def process(self, cmd):
         handler = self.handlers.get(cmd.name, self.handle_unknown)
         return handler(*cmd.args)
-# end::gtp_frontend_run[]
 
-# tag::gtp_frontend_commands[]
     def handle_play(self, color, move):
         if move.lower() == 'pass':
             self.game_state = self.game_state.apply_move(Move.pass_turn())
@@ -98,7 +89,6 @@ class GTPFrontend:
             self.game_state = self.game_state.apply_move(
                 gtp_position_to_coords(stone))
         return response.success()
-# end::gtp_frontend_commands[]
 
     def handle_quit(self):
         self._stopped = True
