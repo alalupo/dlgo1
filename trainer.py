@@ -32,7 +32,7 @@ def main():
     input_shape = (encoder.num_planes, rows, cols)
     network = network_types.MediumNetwork(input_shape)
     num_games = 250
-    epochs = 25
+    epochs = 3
     optimizer = 'adadelta'
     batch_size = 128
     trainer = Trainer(network, encoder, num_games, epochs, rows, cols)
@@ -68,7 +68,8 @@ class Trainer:
         network_name = self.network.name
 
         # self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+        self.model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
 
         self.model.fit(
             generator.generate(batch_size, self.num_classes),
@@ -77,7 +78,10 @@ class Trainer:
             validation_data=test_generator.generate(batch_size, self.num_classes),
             validation_steps=test_generator.get_num_samples() / batch_size,
             callbacks=[
-                ModelCheckpoint(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_model_epoch_{epoch}.h5')
+                ModelCheckpoint(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_model_epoch_{epoch}.h5',
+                                save_weights_only=False,
+                                save_best_only=True
+                                )
             ])
 
         score = self.model.evaluate(
@@ -86,6 +90,14 @@ class Trainer:
 
         print('Test loss:', score[0])
         print('Test accuracy:', score[1])
+
+        # serialize model to JSON
+        model_json = self.model.to_json()
+        with open(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_' + 'model.json', "w") as json_file:
+            json_file.write(model_json)
+        # serialize weights to HDF5
+        # self.model.save_weights("model.h5")
+        print("Saved model to disk")
 
 
 if __name__ == '__main__':
