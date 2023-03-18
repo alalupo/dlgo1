@@ -14,8 +14,8 @@ import tensorflow as tf
 def locate_directory():
     path = Path(__file__)
     project_lvl_path = path.parent
-    data_directory_name = 'checkpoints'
-    data_directory = project_lvl_path.joinpath(data_directory_name)
+    model_directory_name = 'checkpoints'
+    data_directory = project_lvl_path.joinpath(model_directory_name)
     if os.path.exists(data_directory):
         print(f"{data_directory} exists.")
     else:
@@ -30,9 +30,9 @@ def main():
     rows, cols = 19, 19
     encoder = SimpleEncoder((rows, cols))
     input_shape = (encoder.num_planes, rows, cols)
-    network = network_types.MediumNetwork(input_shape)
-    num_games = 250
-    epochs = 3
+    network = network_types.SmallNetwork(input_shape)
+    num_games = 3000
+    epochs = 10
     optimizer = 'adadelta'
     batch_size = 128
     trainer = Trainer(network, encoder, num_games, epochs, rows, cols)
@@ -68,8 +68,9 @@ class Trainer:
         network_name = self.network.name
 
         # self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        self.model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+                           loss='categorical_crossentropy',
+                           metrics=['accuracy'])
 
         self.model.fit(
             generator.generate(batch_size, self.num_classes),

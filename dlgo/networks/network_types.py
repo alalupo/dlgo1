@@ -13,18 +13,22 @@ class SmallNetwork:
             ZeroPadding2D(padding=3, input_shape=self.input_shape, data_format=self.channels_format),  # <1>
             Conv2D(48, (7, 7), data_format=self.channels_format),
             Activation('relu'),
+            Dropout(0.1),
 
             ZeroPadding2D(padding=2, data_format=self.channels_format),  # <2>
             Conv2D(32, (5, 5), data_format=self.channels_format),
             Activation('relu'),
+            Dropout(0.1),
 
             ZeroPadding2D(padding=2, data_format=self.channels_format),
             Conv2D(32, (5, 5), data_format=self.channels_format),
             Activation('relu'),
+            Dropout(0.1),
 
             ZeroPadding2D(padding=2, data_format=self.channels_format),
             Conv2D(32, (5, 5), data_format=self.channels_format),
             Activation('relu'),
+            Dropout(0.1),
 
             Flatten(),
             Dense(512),
