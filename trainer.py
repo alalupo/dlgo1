@@ -32,8 +32,8 @@ def main():
     encoder = SimpleEncoder((rows, cols))
     input_shape = (encoder.num_planes, rows, cols)
     network = network_types.SmallNetwork(input_shape)
-    num_games = 300
-    epochs = 5
+    num_games = 100
+    epochs = 50
     optimizer = 'adadelta'
     batch_size = 128
     trainer = Trainer(network, encoder, num_games, epochs, rows, cols)
@@ -93,16 +93,32 @@ class Trainer:
         print('Test loss:', score[0])
         print('Test accuracy:', score[1])
 
+        print(history.history)
+
         loss = history.history['loss']
         val_loss = history.history['val_loss']
         epochs = range(1, len(loss) + 1)
-        plt.plot(epochs, loss, 'bo', label='Strata trenowania')
-        plt.plot(epochs, val_loss, 'b', label='Strata walidacji')
-        plt.title('Strata trenowania i walidacji')
-        plt.xlabel('Epoki')
-        plt.ylabel('Strata')
+        plt.plot(epochs, loss, 'bo', label='Train loss')
+        plt.plot(epochs, val_loss, 'b', label='Validation loss')
+        plt.title('Train and validation loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
         plt.legend()
-        plt.savefig(checkpoint_dir + '/foo.pdf')
+        # plt.savefig(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_' + 'loss.pdf')
+        plt.savefig(f'{checkpoint_dir}/{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_loss.png')
+
+        plt.clf()
+
+        acc = history.history['accuracy']
+        val_acc = history.history['val_accuracy']
+        plt.plot(epochs, acc, 'bo', label='Train accuracy')
+        plt.plot(epochs, val_acc, 'b', label='Validation accuracy')
+        plt.title('Train and validation accuracy')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy')
+        plt.legend()
+        # plt.savefig(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_' + self.num_games + '_' + self.epochs + '_accuracy.pdf')
+        plt.savefig(f'{checkpoint_dir}/{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_accuracy.png')
 
         # # serialize model to JSON
         # model_json = self.model.to_json()
