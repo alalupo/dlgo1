@@ -51,7 +51,7 @@ class IllegalMoveError(Exception):
     pass
 
 
-class GoString():
+class GoString:
     """Stones that are linked by a chain of connected stones of the
     same color.
     """
@@ -61,11 +61,11 @@ class GoString():
         self.liberties = frozenset(liberties)
 
     def without_liberty(self, point):
-        new_liberties = self.liberties - set([point])
+        new_liberties = self.liberties - {point}
         return GoString(self.color, self.stones, new_liberties)
 
     def with_liberty(self, point):
-        new_liberties = self.liberties | set([point])
+        new_liberties = self.liberties | {point}
         return GoString(self.color, self.stones, new_liberties)
 
     def merged_with(self, string):
@@ -87,11 +87,13 @@ class GoString():
             self.stones == other.stones and \
             self.liberties == other.liberties
 
-    def __deepcopy__(self, memodict={}):
+    def __deepcopy__(self, memodict=None):
+        if memodict is None:
+            memodict = {}
         return GoString(self.color, self.stones, copy.deepcopy(self.liberties))
 
 
-class Board():
+class Board:
     def __init__(self, num_rows, num_cols):
         self.num_rows = num_rows
         self.num_cols = num_cols
@@ -107,7 +109,6 @@ class Board():
         self.neighbor_table = neighbor_tables[dim]
         self.corner_table = corner_tables[dim]
         self.move_ages = MoveAge(self)
-
 
     def neighbors(self, point):
         return self.neighbor_table[point]
@@ -137,7 +138,6 @@ class Board():
                 if neighbor_string not in adjacent_opposite_color:
                     adjacent_opposite_color.append(neighbor_string)
         new_string = GoString(player, [point], liberties)
-# tag::apply_zobrist[]
         # 1. Merge any adjacent strings of the same color.
         for same_color_string in adjacent_same_color:
             new_string = new_string.merged_with(same_color_string)
@@ -147,7 +147,6 @@ class Board():
         self._hash ^= zobrist.HASH_CODE[point, None]
         # Add filled point hash code.
         self._hash ^= zobrist.HASH_CODE[point, player]
-# end::apply_zobrist[]
 
         # 2. Reduce liberties of any adjacent strings of the opposite
         #    color.
@@ -241,7 +240,9 @@ class Board():
             self.num_cols == other.num_cols and \
             self._hash() == other._hash()
 
-    def __deepcopy__(self, memodict={}):
+    def __deepcopy__(self, memodict=None):
+        if memodict is None:
+            memodict = {}
         copied = Board(self.num_rows, self.num_cols)
         # Can do a shallow copy b/c the dictionary maps tuples
         # (immutable) to GoStrings (also immutable)
@@ -249,13 +250,11 @@ class Board():
         copied._hash = self._hash
         return copied
 
-# tag::return_zobrist[]
     def zobrist_hash(self):
         return self._hash
-# end::return_zobrist[]
 
 
-class Move():
+class Move:
     """Any action a player can play on a turn.
     Exactly one of is_play, is_pass, is_resign will be set.
     """
@@ -293,7 +292,7 @@ class Move():
             self.is_resign,
             self.point))
 
-    def  __eq__(self, other):
+    def __eq__(self, other):
         return (
             self.is_play,
             self.is_pass,
@@ -305,7 +304,7 @@ class Move():
             other.point)
 
 
-class GameState():
+class GameState:
     def __init__(self, board, next_player, previous, move):
         self.board = board
         self.next_player = next_player
@@ -341,7 +340,7 @@ class GameState():
 
     @property
     def situation(self):
-        return (self.next_player, self.board)
+        return self.next_player, self.board
 
     def does_move_violate_ko(self, player, move):
         if not move.is_play:

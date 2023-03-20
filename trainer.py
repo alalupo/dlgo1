@@ -9,6 +9,7 @@ from keras.models import Sequential
 from keras.layers.core import Dense
 from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 
 def locate_directory():
@@ -31,8 +32,8 @@ def main():
     encoder = SimpleEncoder((rows, cols))
     input_shape = (encoder.num_planes, rows, cols)
     network = network_types.SmallNetwork(input_shape)
-    num_games = 3000
-    epochs = 10
+    num_games = 300
+    epochs = 5
     optimizer = 'adadelta'
     batch_size = 128
     trainer = Trainer(network, encoder, num_games, epochs, rows, cols)
@@ -72,7 +73,7 @@ class Trainer:
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
-        self.model.fit(
+        history = self.model.fit(
             generator.generate(batch_size, self.num_classes),
             epochs=self.epochs,
             steps_per_epoch=generator.get_num_samples() / batch_size,
@@ -91,6 +92,17 @@ class Trainer:
 
         print('Test loss:', score[0])
         print('Test accuracy:', score[1])
+
+        loss = history.history['loss']
+        val_loss = history.history['val_loss']
+        epochs = range(1, len(loss) + 1)
+        plt.plot(epochs, loss, 'bo', label='Strata trenowania')
+        plt.plot(epochs, val_loss, 'b', label='Strata walidacji')
+        plt.title('Strata trenowania i walidacji')
+        plt.xlabel('Epoki')
+        plt.ylabel('Strata')
+        plt.legend()
+        plt.savefig(checkpoint_dir + '/foo.pdf')
 
         # # serialize model to JSON
         # model_json = self.model.to_json()
