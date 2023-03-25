@@ -25,7 +25,7 @@ class PassWhenOpponentPasses(TerminationStrategy):
 class ResignLargeMargin(TerminationStrategy):
 
     def __init__(self, own_color, cut_off_move, margin):
-        TerminationStrategy.__init__(self)
+        super().__init__()
         self.own_color = own_color
         self.cut_off_move = cut_off_move
         self.margin = margin
@@ -47,10 +47,9 @@ class ResignLargeMargin(TerminationStrategy):
 class TerminationAgent(Agent):
 
     def __init__(self, agent, strategy=None):
-        Agent.__init__(self)
+        super().__init__()
         self.agent = agent
-        self.strategy = strategy if strategy is not None \
-            else TerminationStrategy()
+        self.strategy = strategy if strategy is not None else TerminationStrategy()
 
     def select_move(self, game_state):
         if self.strategy.should_pass(game_state):
@@ -59,9 +58,6 @@ class TerminationAgent(Agent):
             return goboard.Move.resign()
         else:
             return self.agent.select_move(game_state)
-
-    def diagnostics(self):
-        return {'value': self.agent.diagnostics()}
 
 
 def get(termination):

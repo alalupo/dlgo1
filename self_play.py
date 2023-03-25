@@ -78,7 +78,7 @@ class SelfPlayer:
         self.rows, self.cols = 19, 19
         self.encoder = SimpleEncoder((self.rows, self.cols))
         self.model_dir = 'checkpoints'
-        self.model_name = 'simple_medium_model_epoch_3.h5'
+        self.model_name = 'simple_small_model_epoch_51_9p_49.h5'
         self.model_copy_name = 'copy_' + self.model_name
         self.model_path = self.get_model_path()
 

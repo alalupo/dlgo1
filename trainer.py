@@ -32,19 +32,20 @@ def main():
     encoder = SimpleEncoder((rows, cols))
     input_shape = (encoder.num_planes, rows, cols)
     network = network_types.SmallNetwork(input_shape)
-    num_games = 100
+    num_games = 200
     epochs = 50
-    optimizer = 'adadelta'
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     batch_size = 128
-    trainer = Trainer(network, encoder, num_games, epochs, rows, cols)
+    trainer = Trainer(network, encoder, optimizer, num_games, epochs, rows, cols)
     trainer.build_model()
     trainer.train_model(optimizer, batch_size)
 
 
 class Trainer:
-    def __init__(self, network, encoder, num_games=100, num_epochs=5, rows=19, cols=19):
-        self.encoder = encoder
+    def __init__(self, network, encoder, optimizer, num_games=100, num_epochs=5, rows=19, cols=19):
         self.network = network
+        self.encoder = encoder
+        self.optimizer = optimizer
         self.num_games = num_games
         self.epochs = num_epochs
         self.go_board_rows, self.go_board_cols = rows, cols
@@ -69,7 +70,7 @@ class Trainer:
         network_name = self.network.name
 
         # self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+        self.model.compile(optimizer=self.optimizer,
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
@@ -93,18 +94,17 @@ class Trainer:
         print('Test loss:', score[0])
         print('Test accuracy:', score[1])
 
-        print(history.history)
+        # print(history.history)
 
         loss = history.history['loss']
         val_loss = history.history['val_loss']
         epochs = range(1, len(loss) + 1)
         plt.plot(epochs, loss, 'bo', label='Train loss')
         plt.plot(epochs, val_loss, 'b', label='Validation loss')
-        plt.title('Train and validation loss')
+        plt.title(f'Train and validation loss (games: {self.num_games}, epochs: {self.epochs})')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.legend()
-        # plt.savefig(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_' + 'loss.pdf')
         plt.savefig(f'{checkpoint_dir}/{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_loss.png')
 
         plt.clf()
@@ -113,11 +113,10 @@ class Trainer:
         val_acc = history.history['val_accuracy']
         plt.plot(epochs, acc, 'bo', label='Train accuracy')
         plt.plot(epochs, val_acc, 'b', label='Validation accuracy')
-        plt.title('Train and validation accuracy')
+        plt.title(f'Train and validation accuracy (games: {self.num_games}, epochs: {self.epochs})')
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')
         plt.legend()
-        # plt.savefig(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_' + self.num_games + '_' + self.epochs + '_accuracy.pdf')
         plt.savefig(f'{checkpoint_dir}/{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_accuracy.png')
 
         # # serialize model to JSON

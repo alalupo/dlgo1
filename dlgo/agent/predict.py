@@ -21,7 +21,10 @@ class DeepLearningAgent(Agent):
 
     def select_move(self, game_state):
         num_moves = self.encoder.board_width * self.encoder.board_height
-        move_probs = self.predict(game_state)
+        board_tensor = self.encoder.encode(game_state)
+        X = np.array([board_tensor])
+        # move_probs = self.predict(game_state)
+        move_probs = self.model.predict(X)[0]
         move_probs = move_probs ** 3
         eps = 1e-6
         move_probs = np.clip(move_probs, eps, 1 - eps)
@@ -50,7 +53,7 @@ class DeepLearningAgent(Agent):
 
 def load_prediction_agent(h5file):
     model = kerasutil.load_model_from_hdf5_group(h5file)
-    config = model.get_config()
+    # config = model.get_config()
     # print(f'Printing config in load_prediction_agent: {config}')
     encoder_name = h5file['encoder'].attrs['name']
     if not isinstance(encoder_name, str):

@@ -3,25 +3,17 @@ import numpy as np
 from keras import backend as K
 from keras.optimizers import SGD
 
-from dlgo.agent.base import Agent, get_encoder_by_name
+from dlgo.agent.base import Agent
 from dlgo.agent.helpers import is_point_an_eye
 from dlgo import encoders
+from dlgo.encoders.base import get_encoder_by_name
 from dlgo import goboard
 from dlgo import kerasutil
 
 __all__ = [
     'PolicyAgent',
     'load_policy_agent',
-    'policy_gradient_loss',
 ]
-
-
-# Keeping this around so we can read existing agents. But from now on
-# we'll use the built-in crossentropy loss.
-def policy_gradient_loss(y_true, y_pred):
-    clip_pred = K.clip(y_pred, K.epsilon(), 1 - K.epsilon())
-    loss = -1 * y_true * K.log(clip_pred)
-    return K.mean(K.sum(loss, axis=1))
 
 
 def normalize(x):
@@ -29,13 +21,28 @@ def normalize(x):
     return x / total
 
 
+def prepare_experience_data(experience, board_width, board_height):
+    experience_size = experience.actions.shape[0]
+    target_vectors = np.zeros((experience_size, board_width * board_height))
+    for i in range(experience_size):
+        action = experience.actions[i]
+        reward = experience.rewards[i]
+        target_vectors[i][action] = reward
+    return target_vectors
+
+
 class PolicyAgent(Agent):
     """An agent that uses a deep policy network to select moves."""
     def __init__(self, model, encoder):
+        super().__init__()
         self._model = model
         self._encoder = encoder
         self._collector = None
         self._temperature = 0.0
+        self.last_state_value = 0
+
+    def diagnostics(self):
+        return {'value': self.last_state_value}
 
     def set_temperature(self, temperature):
         self._temperature = temperature
@@ -87,31 +94,26 @@ class PolicyAgent(Agent):
         h5file['encoder'].attrs['board_width'] = self._encoder.board_width
         h5file['encoder'].attrs['board_height'] = self._encoder.board_height
         h5file.create_group('model')
-        kerasutil.save_model_to_hdf5_group(self._model, h5file)
+        kerasutil.save_model_to_hdf5_group(self._model, h5file['model'])
 
-    def train(self, experience, lr=0.0000001, clipnorm=1.0, batch_size=512):
-        opt = SGD(lr=lr, clipnorm=clipnorm)
-        self._model.compile(loss='categorical_crossentropy', optimizer=opt)
+    def train(self, experience, lr, clipnorm, batch_size):
+        self._model.compile(
+            loss='categorical_crossentropy',
+            optimizer=SGD(lr=lr, clipnorm=clipnorm))
 
-        n = experience.states.shape[0]
-        # Translate the actions/rewards.
-        num_moves = self._encoder.board_width * self._encoder.board_height
-        y = np.zeros((n, num_moves))
-        for i in range(n):
-            action = experience.actions[i]
-            reward = experience.rewards[i]
-            y[i][action] = reward
+        target_vectors = prepare_experience_data(
+            experience,
+            self._encoder.board_width,
+            self._encoder.board_height)
 
         self._model.fit(
-            experience.states, y,
+            experience.states, target_vectors,
             batch_size=batch_size,
             epochs=1)
 
 
 def load_policy_agent(h5file):
-    model = kerasutil.load_model_from_hdf5_group(
-        h5file,
-        custom_objects={'policy_gradient_loss': policy_gradient_loss})
+    model = kerasutil.load_model_from_hdf5_group(h5file['model'])
     encoder_name = h5file['encoder'].attrs['name']
     if not isinstance(encoder_name, str):
         encoder_name = encoder_name.decode('ascii')
