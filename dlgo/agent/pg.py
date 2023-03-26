@@ -61,6 +61,7 @@ class PolicyAgent(Agent):
             move_probs = np.ones(num_moves) / num_moves
         else:
             # Follow our current policy.
+            print(f'predicting...')
             move_probs = self._model.predict(X, verbose=0)[0]
             # move_probs shape = (361, )
         # Prevent move probs from getting stuck at 0 or 1.
@@ -70,6 +71,7 @@ class PolicyAgent(Agent):
         move_probs = move_probs / np.sum(move_probs)
 
         # Turn the probabilities into a ranked list of moves.
+        print(f'searching for candidate moves...')
         candidates = np.arange(num_moves)
         ranked_moves = np.random.choice(
             candidates, num_moves, replace=False, p=move_probs)
@@ -84,8 +86,10 @@ class PolicyAgent(Agent):
                         state=board_tensor,
                         action=point_idx
                     )
+                print(f'point: {point}')
                 return goboard.Move.play(point)
         # No legal, non-self-destructive moves less.
+        print(f'passing...')
         return goboard.Move.pass_turn()
 
     def serialize(self, h5file):
