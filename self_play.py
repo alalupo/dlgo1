@@ -107,7 +107,7 @@ class SelfPlayer:
 
     def create_bot(self):
         model = self.get_model()
-        print(model.summary())
+        # print(model.summary())
         bot = PolicyAgent(model, self.encoder)
         with h5py.File(self.model_path, "w") as model_file:
             bot.serialize(model_file)
@@ -118,14 +118,15 @@ class SelfPlayer:
     def play(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('--num-games', '-n', type=int, default=10)
-        parser.add_argument('--experience-out', required=True)
+        # parser.add_argument('--experience-out', required=True)
 
         args = parser.parse_args()
-        experience_filename = args.experience_out
+        # experience_filename = args.experience_out
         num_games = args.num_games
         global BOARD_SIZE
         BOARD_SIZE = 19
 
+        experience_filename = f'exp{num_games}.h5'
         agent1 = self.create_bot()
         agent2 = self.create_bot()
         collector1 = rl.ExperienceCollector()
@@ -147,8 +148,12 @@ class SelfPlayer:
                 collector1.complete_episode(reward=-1)
 
         experience = rl.combine_experience([collector1, collector2])
-        with h5py.File(experience_filename, 'w') as experience_outf:
+        with h5py.File(experience_filename, "w", rdcc_nbytes=5242880) as experience_outf:
+        # with h5py.File(experience_filename, 'w') as experience_outf:
             experience.serialize(experience_outf)
+            propfaid = h5py.h5p.create(h5py.h5p.FILE_ACCESS)
+            settings = list(propfaid.get_cache())
+            print(f'propfaid settings: {settings}')
 
 
 if __name__ == '__main__':

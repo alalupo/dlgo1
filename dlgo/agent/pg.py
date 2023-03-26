@@ -55,14 +55,14 @@ class PolicyAgent(Agent):
 
         board_tensor = self._encoder.encode(game_state)
         X = np.array([board_tensor])
-
+        # X shape for SimpleEncoder = (1, 11, 19, 19)
         if np.random.random() < self._temperature:
             # Explore random moves.
             move_probs = np.ones(num_moves) / num_moves
         else:
             # Follow our current policy.
-            move_probs = self._model.predict(X)[0]
-
+            move_probs = self._model.predict(X, verbose=0)[0]
+            # move_probs shape = (361, )
         # Prevent move probs from getting stuck at 0 or 1.
         eps = 1e-5
         move_probs = np.clip(move_probs, eps, 1 - eps)
