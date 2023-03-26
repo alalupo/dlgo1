@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 
 import h5py
+import tensorflow as tf
 
 from dlgo import agent
 from keras.models import load_model
@@ -119,6 +120,9 @@ class SelfPlayer:
         parser = argparse.ArgumentParser()
         parser.add_argument('--num-games', '-n', type=int, default=10)
         # parser.add_argument('--experience-out', required=True)
+
+        print(f'Listing GPU devices:')
+        print(tf.config.list_physical_devices('GPU'))
 
         args = parser.parse_args()
         # experience_filename = args.experience_out

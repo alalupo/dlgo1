@@ -1,6 +1,7 @@
 """Policy gradient learning."""
 import numpy as np
 import gc
+import tensorflow as tf
 from keras import backend as K
 from keras.optimizers import SGD
 
@@ -57,12 +58,15 @@ class PolicyAgent(Agent):
         board_tensor = self._encoder.encode(game_state)
         X = np.array([board_tensor])
         # X shape for SimpleEncoder = (1, 11, 19, 19)
+        # the conversion below due to: https://github.com/tensorflow/tensorflow/issues/44711#issuecomment-724439274
+        X = tf.convert_to_tensor(X)
         if np.random.random() < self._temperature:
             # Explore random moves.
             move_probs = np.ones(num_moves) / num_moves
         else:
             # Follow our current policy.
             move_probs = self._model.predict(X, verbose=0)[0]
+            # memory leak counter:
             gc.collect()
             # move_probs shape = (361, )
         # Prevent move probs from getting stuck at 0 or 1.
