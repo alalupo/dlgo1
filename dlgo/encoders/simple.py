@@ -3,21 +3,20 @@ import numpy as np
 from dlgo.encoders.base import Encoder
 from dlgo.goboard import Move
 from dlgo.gotypes import Player, Point
+from dlgo.networks import network_types
 
 
 class SimpleEncoder(Encoder):
     def __init__(self, board_size):
-        """
-        Args:
-            board_size: tuple of (width, height)
-        """
         self.board_width, self.board_height = board_size
+        # The function of all 11 planes:
         # 0 - 3. black stones with 1, 2, 3, 4+ liberties
         # 4 - 7. white stones with 1, 2, 3, 4+ liberties
         # 8. black plays next
         # 9. white plays next
         # 10. move would be illegal due to ko
         self.num_planes = 11
+        self.channels_sequence = network_types.channels()
 
     def name(self):
         return 'simple'
@@ -36,12 +35,12 @@ class SimpleEncoder(Encoder):
                 if go_string is None:
                     if game_state.does_move_violate_ko(game_state.next_player,
                                                        Move.play(p)):
-                        board_tensor[10][r][c] = 1
+                        board_tensor[r][c][10] = 1
                 else:
                     liberty_plane = min(4, go_string.num_liberties) - 1
                     if go_string.color == Player.white:
                         liberty_plane += 4
-                    board_tensor[liberty_plane][r][c] = 1
+                    board_tensor[r][c][liberty_plane] = 1
 
         return board_tensor
 
@@ -60,7 +59,10 @@ class SimpleEncoder(Encoder):
         return self.board_width * self.board_height
 
     def shape(self):
-        return self.num_planes, self.board_height, self.board_width
+        if self.channels_sequence == 'channels_last':
+            return self.board_height, self.board_width, self.num_planes
+        else:
+            return self.num_planes, self.board_width, self.board_width
 
 
 def create(board_size):

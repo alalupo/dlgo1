@@ -3,8 +3,12 @@ from keras.layers.core import Dense, Activation, Flatten
 from keras.layers.convolutional import Conv2D, ZeroPadding2D
 
 
+def channels():
+    return 'channels_first'
+
+
 def layers(input_shape):
-    channels_format = 'channels_last'
+    channels_format = channels()
     return [
         ZeroPadding2D((2, 2), input_shape=input_shape, data_format=channels_format),
         Conv2D(64, (5, 5), padding='valid', data_format=channels_format),

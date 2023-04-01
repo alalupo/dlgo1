@@ -66,7 +66,8 @@ class PolicyAgent(Agent):
         else:
             # Follow our current policy.
             # move_probs = self._model.predict(X, verbose=0)[0]
-            # the line above was changed due to: https://github.com/tensorflow/tensorflow/issues/44711#issuecomment-1280844213
+            # the line above was changed due to:
+            # https://github.com/tensorflow/tensorflow/issues/44711#issuecomment-1280844213
             move_probs = self._model(X, training=False).numpy()[0]
             # memory leak counter:
             gc.collect()

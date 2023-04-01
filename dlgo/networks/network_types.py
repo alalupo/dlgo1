@@ -1,11 +1,20 @@
+import tensorflow as tf
 from keras.layers.core import Dense, Activation, Flatten, Dropout
 from keras.layers.convolutional import Conv2D, ZeroPadding2D
+
+
+def show_data_format():
+    print(f'Image data format: {tf.keras.backend.image_data_format()}')
+
+
+def channels():
+    return 'channels_last'
 
 
 class SmallNetwork:
     def __init__(self, input_shape):
         self.input_shape = input_shape
-        self.channels_format = 'channels_last'
+        self.channels_format = channels()
         self.name = 'small'
 
     def layers(self):
@@ -39,7 +48,7 @@ class SmallNetwork:
 class MediumNetwork:
     def __init__(self, input_shape):
         self.input_shape = input_shape
-        self.channels_format = 'channels_last'
+        self.channels_format = channels()
         self.name = 'medium'
 
     def layers(self):
@@ -73,7 +82,7 @@ class MediumNetwork:
 class LargeNetwork:
     def __init__(self, input_shape):
         self.input_shape = input_shape
-        self.channels_format = 'channels_last'
+        self.channels_format = channels()
         self.name = 'large'
 
     def layers(self):

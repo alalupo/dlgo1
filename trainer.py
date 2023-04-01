@@ -24,16 +24,23 @@ def locate_directory():
     return str(data_directory)
 
 
-def main():
+def show_intro():
+    print(f'********************************************************************************************')
     print(f'Don\'t forget to clean up data directory of npy files before you start training a new model.')
     print(f'Put into the terminal the following command:')
-    print(f'find ./data/ -name \*.npy -delete')
+    print(f'    find ./data/ -name \*.npy -delete')
+    network_types.show_data_format()
+
+
+def main():
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    show_intro()
     rows, cols = 19, 19
     encoder = SimpleEncoder((rows, cols))
-    input_shape = (encoder.num_planes, rows, cols)
+    input_shape = (rows, cols, encoder.num_planes)
     network = network_types.SmallNetwork(input_shape)
     num_games = 200
-    epochs = 50
+    epochs = 15
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     batch_size = 128
     trainer = Trainer(network, encoder, optimizer, num_games, epochs, rows, cols)
@@ -81,7 +88,7 @@ class Trainer:
             validation_data=test_generator.generate(batch_size, self.num_classes),
             validation_steps=test_generator.get_num_samples() / batch_size,
             callbacks=[
-                ModelCheckpoint(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_model_epoch_{epoch}.h5',
+                ModelCheckpoint(checkpoint_dir + '/model_' + encoder_name + '_' + network_name + '_epoch_{epoch}.h5',
                                 save_weights_only=False,
                                 save_best_only=True
                                 )

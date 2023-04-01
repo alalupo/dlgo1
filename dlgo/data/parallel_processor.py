@@ -182,6 +182,14 @@ class GoDataProcessor:
             if not os.path.isfile(self.data_dir + '/' + data_file_name):
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
+                # print(f'zips appended:')
+                # print(f'self.__class__: {self.__class__}')
+                # print(f'self.encoder_string: {self.encoder_string}')
+                # print(f'zip_name: {zip_name}')
+                # print(f'data_file_name: {data_file_name}')
+                # print(f'indices by zip name:')
+                # for index in indices_by_zip_name:
+                #     print(f'{index}')
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
         pool = multiprocessing.Pool(processes=cores)
