@@ -150,14 +150,20 @@ class SelfPlayer:
                 collector2.complete_episode(reward=1)
                 collector1.complete_episode(reward=-1)
 
-        print(f'>>> Combining experience...')
-        experience = rl.combine_experience([collector1, collector2])
-        print(f'>>> Saving the experience file...')
-        with h5py.File(experience_filename, "w") as experience_outf:
-            experience.serialize(experience_outf)
-            propfaid = h5py.h5p.create(h5py.h5p.FILE_ACCESS)
-            settings = list(propfaid.get_cache())
-            print(f'propfaid settings: {settings}')
+        print(f'>>> Saving separate experiences...')
+        with h5py.File(experience_filename, "a") as experience_outf:
+            buffer1 = rl.get_buffer(collector1)
+            buffer2 = rl.get_buffer(collector2)
+            buffer1.serialize(experience_outf)
+            buffer2.serialize(experience_outf)
+
+        # experience = rl.combine_experience([collector1, collector2])
+        # print(f'>>> Saving the experience file...')
+        # with h5py.File(experience_filename, "w") as experience_outf:
+        #     experience.serialize(experience_outf)
+        #     propfaid = h5py.h5p.create(h5py.h5p.FILE_ACCESS)
+        #     settings = list(propfaid.get_cache())
+        #     print(f'propfaid settings: {settings}')
 
 
 if __name__ == '__main__':

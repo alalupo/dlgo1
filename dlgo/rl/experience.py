@@ -5,6 +5,7 @@ __all__ = [
     'ExperienceBuffer',
     'combine_experience',
     'load_experience',
+    'get_buffer'
 ]
 
 
@@ -17,6 +18,12 @@ class ExperienceCollector(object):
         self._current_episode_states = []
         self._current_episode_actions = []
         self._current_episode_estimated_values = []
+
+    def get_buffer_data(self):
+        return np.array(self.states), \
+               np.array(self.actions), \
+               np.array(self.rewards), \
+               np.array(self.advantages)
 
     def begin_episode(self):
         self._current_episode_states = []
@@ -51,11 +58,59 @@ class ExperienceBuffer(object):
         self.advantages = advantages
 
     def serialize(self, h5file):
-        h5file.create_group('experience')
-        h5file['experience'].create_dataset('states', data=self.states)
-        h5file['experience'].create_dataset('actions', data=self.actions)
-        h5file['experience'].create_dataset('rewards', data=self.rewards)
-        h5file['experience'].create_dataset('advantages', data=self.advantages)
+        group_name = 'experience'
+        # for name in h5file:
+        #     print(f'name: {name}')
+        # print(f'The h5 file keys: {list(h5file.keys())}')
+        if group_name in h5file.keys():
+            # grp = h5file['experience']
+            # print(f'grp name: {grp.name}')
+            # dset1 = h5file['experience/states']
+            # print(f'states shape: {dset1.shape}')
+            # print(f'states.shape[0] shape: {dset1.shape[0]}')
+            # print(f'self.states.shape = {self.states.shape}')
+            # print(f'self.states.shape[0] = {self.states.shape[0]}')
+            # print(f'states dtype: {dset1.dtype}')
+            h5file['experience/states'].resize((h5file['experience/states'].shape[0] + self.states.shape[0]), axis=0)
+            h5file['experience/states'][-self.states.shape[0]:] = self.states
+            h5file['experience/actions'].resize((h5file['experience/actions'].shape[0] + self.actions.shape[0]), axis=0)
+            h5file['experience/actions'][-self.actions.shape[0]:] = self.actions
+            h5file['experience/rewards'].resize((h5file['experience/rewards'].shape[0] + self.rewards.shape[0]), axis=0)
+            h5file['experience/rewards'][-self.rewards.shape[0]:] = self.rewards
+            h5file['experience/advantages'].resize(
+                (h5file['experience/advantages'].shape[0] + self.advantages.shape[0]), axis=0)
+            h5file['experience/advantages'][-self.advantages.shape[0]:] = self.advantages
+            # print(f'>>>The resized datasets:')
+            # print(f'states shape: {dset1.shape}')
+            # print(f'states dtype: {dset1.dtype}')
+            # dset2 = h5file['experience/actions']
+            # print(f'actions shape: {dset2.shape}')
+            # print(f'actions dtype: {dset2.dtype}')
+            # dset3 = h5file['experience/rewards']
+            # print(f'rewards shape: {dset3.shape}')
+            # print(f'rewards dtype: {dset3.dtype}')
+            # dset4 = h5file['experience/advantages']
+            # print(f'advantages shape: {dset4.shape}')
+            # print(f'advantages dtype: {dset4.dtype}')
+        else:
+            h5file.create_group('experience')
+            h5file['experience'].create_dataset('states', data=self.states, maxshape=(None, 19, 19, 11))
+            h5file['experience'].create_dataset('actions', data=self.actions, maxshape=(None,))
+            h5file['experience'].create_dataset('rewards', data=self.rewards, maxshape=(None,))
+            h5file['experience'].create_dataset('advantages', data=self.advantages, maxshape=(None,))
+            # print(f'>>>The freshly created datasets:')
+            # dset1 = h5file['experience/states']
+            # print(f'states shape: {dset1.shape}')
+            # print(f'states dtype: {dset1.dtype}')
+            # dset2 = h5file['experience/actions']
+            # print(f'actions shape: {dset2.shape}')
+            # print(f'actions dtype: {dset2.dtype}')
+            # dset3 = h5file['experience/rewards']
+            # print(f'rewards shape: {dset3.shape}')
+            # print(f'rewards dtype: {dset3.dtype}')
+            # dset4 = h5file['experience/advantages']
+            # print(f'advantages shape: {dset4.shape}')
+            # print(f'advantages dtype: {dset4.dtype}')
 
 
 def combine_experience(collectors):
@@ -75,7 +130,8 @@ def combine_experience(collectors):
     combined_rewards = np.concatenate([np.array(c.rewards) for c in collectors])
 
     print(f'>>Combining advantages...')
-    print(f'Collectors\' combined_advantages size: {[round(np.array(c.advantages).nbytes / 1000000, 2) for c in collectors]}')
+    print(
+        f'Collectors\' combined_advantages size: {[round(np.array(c.advantages).nbytes / 1000000, 2) for c in collectors]}')
     combined_advantages = np.concatenate([np.array(c.advantages) for c in collectors])
 
     print(f'>>Returning buffer...')
@@ -84,6 +140,15 @@ def combine_experience(collectors):
         combined_actions,
         combined_rewards,
         combined_advantages)
+
+
+def get_buffer(collector):
+    states, actions, rewards, advantages = collector.get_buffer_data()
+    return ExperienceBuffer(
+        states,
+        actions,
+        rewards,
+        advantages)
 
 
 def load_experience(h5file):
