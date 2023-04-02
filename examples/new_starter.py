@@ -17,7 +17,7 @@ class Starter:
         self.rows, self.cols = 19, 19
         self.encoder = SimpleEncoder((self.rows, self.cols))
         self.model_dir = 'checkpoints'
-        self.model_name = 'simple_small_model_epoch_51_9p_49.h5'
+        self.model_name = 'model_simple_small_250_50_epoch50_37proc.h5'
         self.model_copy_name = 'copy_' + self.model_name
         self.model_path = self.get_model_path()
 

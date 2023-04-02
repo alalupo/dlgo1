@@ -50,6 +50,10 @@ class TerminationAgent(Agent):
         super().__init__()
         self.agent = agent
         self.strategy = strategy if strategy is not None else TerminationStrategy()
+        self.last_state_value = 0
+
+    def diagnostics(self):
+        return self.agent.diagnostics()
 
     def select_move(self, game_state):
         if self.strategy.should_pass(game_state):
@@ -66,4 +70,3 @@ def get(termination):
     else:
         raise ValueError("Unsupported termination strategy: {}"
                          .format(termination))
-
