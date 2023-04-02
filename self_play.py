@@ -153,7 +153,7 @@ class SelfPlayer:
         print(f'>>> Combining experience...')
         experience = rl.combine_experience([collector1, collector2])
         print(f'>>> Saving the experience file...')
-        with h5py.File(experience_filename, "a") as experience_outf:
+        with h5py.File(experience_filename, "w") as experience_outf:
             experience.serialize(experience_outf)
             propfaid = h5py.h5p.create(h5py.h5p.FILE_ACCESS)
             settings = list(propfaid.get_cache())

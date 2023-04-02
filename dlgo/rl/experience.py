@@ -59,16 +59,19 @@ class ExperienceBuffer(object):
 
 
 def combine_experience(collectors):
-    print(f'Concatenating states...')
+    print(f'>>Concatenating states...')
+    print(f'Collectors\' combined_states size: {[round(np.array(c.states).nbytes / 1000000, 2) for c in collectors]}')
     combined_states = np.concatenate([np.array(c.states) for c in collectors])
-    print(f'Concatenating actions...')
+    print(f'>>Concatenating actions...')
+    print(f'Collectors\' combined_actions size: {[round(np.array(c.actions).nbytes / 1000000, 2) for c in collectors]}')
     combined_actions = np.concatenate([np.array(c.actions) for c in collectors])
-    print(f'Concatenating rewards...')
+    print(f'>>Concatenating rewards...')
+    print(f'Collectors\' combined_rewards size: {[round(np.array(c.rewards).nbytes / 1000000, 2) for c in collectors]}')
     combined_rewards = np.concatenate([np.array(c.rewards) for c in collectors])
-    print(f'Combining concatenations...')
-    combined_advantages = np.concatenate([
-        np.array(c.advantages) for c in collectors])
-    print(f'Returning buffer...')
+    print(f'>>Combining advantages...')
+    print(f'Collectors\' combined_advantages size: {[round(np.array(c.advantages).nbytes / 1000000, 2) for c in collectors]}')
+    combined_advantages = np.concatenate([np.array(c.advantages) for c in collectors])
+    print(f'>>Returning buffer...')
     return ExperienceBuffer(
         combined_states,
         combined_actions,
