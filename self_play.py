@@ -77,7 +77,7 @@ class SelfPlayer:
         self.rows, self.cols = 19, 19
         self.encoder = SimpleEncoder((self.rows, self.cols))
         self.model_dir = 'checkpoints'
-        self.model_name = 'simple_small_model_epoch_12.h5'
+        self.model_name = 'model_simple_small_1000_20_epoch12_10proc.h5'
         self.model_copy_name = 'copy_' + self.model_name
         self.model_path = self.get_model_path()
 
@@ -150,10 +150,10 @@ class SelfPlayer:
                 collector2.complete_episode(reward=1)
                 collector1.complete_episode(reward=-1)
 
+        print(f'>>> Combining experience...')
         experience = rl.combine_experience([collector1, collector2])
         print(f'>>> Saving the experience file...')
-        with h5py.File(experience_filename, "w") as experience_outf:
-            # with h5py.File(experience_filename, 'w') as experience_outf:
+        with h5py.File(experience_filename, "a") as experience_outf:
             experience.serialize(experience_outf)
             propfaid = h5py.h5p.create(h5py.h5p.FILE_ACCESS)
             settings = list(propfaid.get_cache())
