@@ -1,8 +1,6 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License,
 # v. 2.0. If a copy of the MPL was not distributed with this file, You can
 # obtain one at http://mozilla.org/MPL/2.0/.
-from __future__ import print_function
-from __future__ import absolute_import
 import os
 import random
 from dlgo.data.index_processor import KGSIndex
@@ -23,9 +21,14 @@ class Sampler:
         self.print_test_games()
 
     def print_test_games(self):
-        print(f'>>> Printing test games in Sampler:')
+        print(f'>>> Checking test games in Sampler:')
+        latest_year = 2000
         for test_game in self.test_games:
-            print(f'{test_game}')
+            filename = test_game[0]
+            year = int(filename.split('-')[1].split('_')[0])
+            if year > latest_year:
+                latest_year = year
+        print(f'The latest year in the test set: {latest_year}')
 
     def draw_data(self, data_type, num_samples):
         if data_type == 'test':

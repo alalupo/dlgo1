@@ -1,21 +1,19 @@
 import argparse
-import datetime
-from collections import namedtuple
 import os
-from pathlib import Path
 import shutil
+from collections import namedtuple
+from pathlib import Path
 
 import h5py
 import tensorflow as tf
-
-from dlgo import agent
 from keras.models import load_model
-from dlgo import scoring
+
 from dlgo import rl
-from dlgo.goboard_fast import GameState, Player, Point
+from dlgo import scoring
 from dlgo.agent.pg import PolicyAgent
-from dlgo.encoders.simple import SimpleEncoder
 from dlgo.agent.pg import load_policy_agent
+from dlgo.encoders.simple import SimpleEncoder
+from dlgo.goboard_fast import GameState, Player, Point
 
 COLS = 'ABCDEFGHJKLMNOPQRST'
 STONE_TO_CHAR = {
@@ -117,6 +115,7 @@ class SelfPlayer:
             return bot_from_file
 
     def play(self):
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
         parser = argparse.ArgumentParser()
         parser.add_argument('--num-games', '-n', type=int, default=10)
         # parser.add_argument('--experience-out', required=True)
@@ -152,8 +151,9 @@ class SelfPlayer:
                 collector1.complete_episode(reward=-1)
 
         experience = rl.combine_experience([collector1, collector2])
-        with h5py.File(experience_filename, "w", rdcc_nbytes=5242880) as experience_outf:
-        # with h5py.File(experience_filename, 'w') as experience_outf:
+        print(f'>>> Saving the experience file...')
+        with h5py.File(experience_filename, "w") as experience_outf:
+            # with h5py.File(experience_filename, 'w') as experience_outf:
             experience.serialize(experience_outf)
             propfaid = h5py.h5p.create(h5py.h5p.FILE_ACCESS)
             settings = list(propfaid.get_cache())
@@ -163,4 +163,3 @@ class SelfPlayer:
 if __name__ == '__main__':
     player = SelfPlayer()
     player.play()
-

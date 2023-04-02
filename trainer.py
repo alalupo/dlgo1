@@ -30,6 +30,7 @@ def show_intro():
     print(f'Put into the terminal the following command:')
     print(f'    find ./data/ -name \*.npy -delete')
     network_types.show_data_format()
+    print(f'********************************************************************************************')
 
 
 def main():
@@ -39,12 +40,11 @@ def main():
     encoder = SimpleEncoder((rows, cols))
     input_shape = (rows, cols, encoder.num_planes)
     network = network_types.SmallNetwork(input_shape)
-    num_games = 200
-    epochs = 15
+    num_games = 250
+    epochs = 50
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     batch_size = 128
     trainer = Trainer(network, encoder, optimizer, num_games, epochs, rows, cols)
-    trainer.build_model()
     trainer.train_model(optimizer, batch_size)
 
 
@@ -65,7 +65,9 @@ class Trainer:
         for layer in network_layers:
             model.add(layer)
         model.add(Dense(self.num_classes, activation='softmax'))
+        print(f'Model summary:')
         print(model.summary())
+        print(f'********************************************************************************************')
         return model
 
     def train_model(self, optimizer='adadelta', batch_size=128):
@@ -112,7 +114,7 @@ class Trainer:
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.legend()
-        plt.savefig(f'{checkpoint_dir}/{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_loss.png')
+        plt.savefig(f'{checkpoint_dir}/graph_{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_loss.png')
 
         plt.clf()
 
@@ -124,7 +126,7 @@ class Trainer:
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')
         plt.legend()
-        plt.savefig(f'{checkpoint_dir}/{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_accuracy.png')
+        plt.savefig(f'{checkpoint_dir}/graph_{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_accuracy.png')
 
         # # serialize model to JSON
         # model_json = self.model.to_json()
