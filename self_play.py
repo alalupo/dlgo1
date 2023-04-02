@@ -157,6 +157,7 @@ class SelfPlayer:
             buffer1.serialize(experience_outf)
             buffer2.serialize(experience_outf)
 
+        print(f'>>> Done')
         # experience = rl.combine_experience([collector1, collector2])
         # print(f'>>> Saving the experience file...')
         # with h5py.File(experience_filename, "w") as experience_outf:
