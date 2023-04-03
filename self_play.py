@@ -139,13 +139,17 @@ class SelfPlayer:
 
         for i in range(num_games):
             print('Simulating game %d/%d...' % (i + 1, num_games))
-            print(f'{self.__class__} Collector sizes:')
-            agent1.collector_size()
-            agent2.collector_size()
+
             collector1.begin_episode()
             collector2.begin_episode()
 
             game_record = simulate_game(agent1, agent2)
+
+            print(f'{self.__class__} Collector sizes:')
+            agent1.collector_size()
+            agent2.collector_size()
+
+            print(f'>>>Completing episodes...')
             if game_record.winner == Player.black:
                 collector1.complete_episode(reward=1)
                 collector2.complete_episode(reward=-1)

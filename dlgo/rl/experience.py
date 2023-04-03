@@ -40,6 +40,7 @@ class ExperienceCollector(object):
 
     def complete_episode(self, reward):
         num_states = len(self._current_episode_states)
+        print(f'num_states in current episode: {num_states}')
         self.states += self._current_episode_states
         self.actions += self._current_episode_actions
         self.rewards += [reward for _ in range(num_states)]
