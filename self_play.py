@@ -139,6 +139,9 @@ class SelfPlayer:
 
         for i in range(num_games):
             print('Simulating game %d/%d...' % (i + 1, num_games))
+            print(f'{self.__class__} Collector sizes:')
+            agent1.collector_size()
+            agent2.collector_size()
             collector1.begin_episode()
             collector2.begin_episode()
 

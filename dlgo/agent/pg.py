@@ -35,6 +35,7 @@ def prepare_experience_data(experience, board_width, board_height):
 
 class PolicyAgent(Agent):
     """An agent that uses a deep policy network to select moves."""
+
     def __init__(self, model, encoder):
         super().__init__()
         self._model = model
@@ -46,6 +47,9 @@ class PolicyAgent(Agent):
     def diagnostics(self):
         return {'value': self.last_state_value}
 
+    def collector_size(self):
+        self._collector.show_size()
+
     def set_temperature(self, temperature):
         self._temperature = temperature
 
@@ -54,7 +58,6 @@ class PolicyAgent(Agent):
 
     def select_move(self, game_state):
         num_moves = self._encoder.board_width * self._encoder.board_height
-
         board_tensor = self._encoder.encode(game_state)
         X = np.array([board_tensor])
         # X shape for SimpleEncoder = (1, 11, 19, 19)
@@ -84,16 +87,12 @@ class PolicyAgent(Agent):
             candidates, num_moves, replace=False, p=move_probs)
         for point_idx in ranked_moves:
             point = self._encoder.decode_point_index(point_idx)
-            if game_state.is_valid_move(goboard.Move.play(point)) and \
-                    not is_point_an_eye(game_state.board,
-                                        point,
-                                        game_state.next_player):
+            if not game_state.is_valid_move(goboard.Move.play(point)):
+                continue
+            if not is_point_an_eye(game_state.board, point, game_state.next_player):
                 if self._collector is not None:
-                    self._collector.record_decision(
-                        state=board_tensor,
-                        action=point_idx
-                    )
-                return goboard.Move.play(point)
+                    self._collector.record_decision(state=board_tensor, action=point_idx)
+                    return goboard.Move.play(point)
         # No legal, non-self-destructive moves less.
         return goboard.Move.pass_turn()
 

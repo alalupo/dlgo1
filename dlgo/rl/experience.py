@@ -25,6 +25,9 @@ class ExperienceCollector(object):
                np.array(self.rewards), \
                np.array(self.advantages)
 
+    def show_size(self):
+        print(f'{self.__class__}: {round(np.array(self.states).nbytes / 1000000, 2)} MB')
+
     def begin_episode(self):
         self._current_episode_states = []
         self._current_episode_actions = []
