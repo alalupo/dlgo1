@@ -47,9 +47,6 @@ class PolicyAgent(Agent):
     def diagnostics(self):
         return {'value': self.last_state_value}
 
-    def collector_size(self):
-        self._collector.show_size()
-
     def set_temperature(self, temperature):
         self._temperature = temperature
 

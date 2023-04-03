@@ -78,6 +78,7 @@ class SelfPlayer:
         self.encoder = SimpleEncoder((self.rows, self.cols))
         self.model_dir = 'checkpoints'
         self.model_name = 'model_simple_small_1000_20_epoch12_10proc.h5'
+        self.exp_file = 'exp_simple_small_1000_20_epoch12_10proc.h5'
         self.model_copy_name = 'copy_' + self.model_name
         self.model_path = self.get_model_path()
 
@@ -118,22 +119,22 @@ class SelfPlayer:
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
         parser = argparse.ArgumentParser()
         parser.add_argument('--num-games', '-n', type=int, default=10)
-        # parser.add_argument('--experience-out', required=True)
+        # parser.add_argument('--experience-out', '-e', required=True)
 
         print(f'Listing GPU devices:')
         print(tf.config.list_physical_devices('GPU'))
 
         args = parser.parse_args()
-        # experience_filename = args.experience_out
         num_games = args.num_games
+        # experience_filename = args.experience_out
+
         global BOARD_SIZE
         BOARD_SIZE = 19
 
-        experience_filename = f'exp{num_games}.h5'
         agent1 = self.create_bot()
         agent2 = self.create_bot()
-        collector1 = rl.ExperienceCollector()
-        collector2 = rl.ExperienceCollector()
+        collector1 = rl.EpExperienceCollector(self.exp_file)
+        collector2 = rl.EpExperienceCollector(self.exp_file)
         agent1.set_collector(collector1)
         agent2.set_collector(collector2)
 
@@ -145,10 +146,6 @@ class SelfPlayer:
 
             game_record = simulate_game(agent1, agent2)
 
-            print(f'{self.__class__} Collector sizes:')
-            agent1.collector_size()
-            agent2.collector_size()
-
             print(f'>>>Completing episodes...')
             if game_record.winner == Player.black:
                 collector1.complete_episode(reward=1)
@@ -157,12 +154,12 @@ class SelfPlayer:
                 collector2.complete_episode(reward=1)
                 collector1.complete_episode(reward=-1)
 
-        print(f'>>> Saving separate experiences...')
-        with h5py.File(experience_filename, "a") as experience_outf:
-            buffer1 = rl.get_buffer(collector1)
-            buffer2 = rl.get_buffer(collector2)
-            buffer1.serialize(experience_outf)
-            buffer2.serialize(experience_outf)
+        # print(f'>>> Saving separate experiences...')
+        # with h5py.File(experience_filename, "a") as experience_outf:
+        #     buffer1 = rl.get_buffer(collector1)
+        #     buffer2 = rl.get_buffer(collector2)
+        #     buffer1.serialize(experience_outf)
+        #     buffer2.serialize(experience_outf)
 
         print(f'>>> Done')
         # experience = rl.combine_experience([collector1, collector2])
