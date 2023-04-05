@@ -1,8 +1,6 @@
 import argparse
 import os
-import shutil
 from collections import namedtuple
-from pathlib import Path
 
 import h5py
 import tensorflow as tf
@@ -14,6 +12,7 @@ from dlgo.agent.pg import PolicyAgent
 from dlgo.agent.pg import load_policy_agent
 from dlgo.encoders.simple import SimpleEncoder
 from dlgo.goboard_fast import GameState, Player, Point
+from dlgo.tools.file_finder import FileFinder
 
 COLS = 'ABCDEFGHJKLMNOPQRST'
 STONE_TO_CHAR = {
@@ -76,44 +75,25 @@ class SelfPlayer:
     def __init__(self):
         self.rows, self.cols = 19, 19
         self.encoder = SimpleEncoder((self.rows, self.cols))
-        self.model_dir = 'checkpoints'
         self.model_name = 'model_simple_small_1000_20_epoch12_10proc.h5'
-        self.exp_file = 'exp_simple_small_1000_20_epoch12_10proc.h5'
-        self.model_copy_name = 'copy_' + self.model_name
-        self.model_path = self.get_model_path()
+        # SelfPlayer creates two copies of existing model, one for each agent,
+        # but it uses the same name and path for both copies
+        self.model_copy_path = self.get_model_copy_path()
+        self.exp_name = self.get_exp_name()
+        self.exp_path = self.get_exp_path()
 
-    def get_model_path(self):
-        path = Path(__file__)
-        project_lvl_path = path.parent
-        model_dir_full_path = project_lvl_path.joinpath(self.model_dir)
-        model_path = str(model_dir_full_path.joinpath(self.model_name))
-        model_copy_path = str(model_dir_full_path.joinpath(self.model_copy_name))
-        if not os.path.exists(model_path):
-            raise FileNotFoundError
-        shutil.copy(model_path, model_copy_path)
-        model_path = model_copy_path
-        return model_path
+    def get_model_copy_path(self):
+        finder = FileFinder()
+        copy_name = finder.get_new_prefix_name_from_model(self.model_name, 'copy_')
+        return finder.get_model_full_path(copy_name)
 
-    def get_model(self):
-        model_path = self.get_model_path()
-        model_file = None
-        try:
-            model_file = open(model_path, 'r')
-        finally:
-            model_file.close()
-        with h5py.File(model_path, "r") as model_file:
-            model = load_model(model_file)
-        return model
+    def get_exp_name(self):
+        finder = FileFinder()
+        return finder.get_new_prefix_name_from_model(self.model_name, 'exp_')
 
-    def create_bot(self):
-        model = self.get_model()
-        # print(model.summary())
-        bot = PolicyAgent(model, self.encoder)
-        with h5py.File(self.model_path, "w") as model_file:
-            bot.serialize(model_file)
-        with h5py.File(self.model_path, "r") as model_file:
-            bot_from_file = load_policy_agent(model_file)
-            return bot_from_file
+    def get_exp_path(self):
+        finder = FileFinder()
+        return finder.get_exp_full_path(self.exp_name)
 
     def play(self):
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -131,21 +111,18 @@ class SelfPlayer:
         global BOARD_SIZE
         BOARD_SIZE = 19
 
-        agent1 = self.create_bot()
-        agent2 = self.create_bot()
-        collector1 = rl.EpExperienceCollector(self.exp_file)
-        collector2 = rl.EpExperienceCollector(self.exp_file)
+        agent1 = self.create_bot(1)
+        agent2 = self.create_bot(2)
+        collector1 = rl.EpExperienceCollector(self.exp_path)
+        collector2 = rl.EpExperienceCollector(self.exp_path)
         agent1.set_collector(collector1)
         agent2.set_collector(collector2)
 
         for i in range(num_games):
             print('Simulating game %d/%d...' % (i + 1, num_games))
-
             collector1.begin_episode()
             collector2.begin_episode()
-
             game_record = simulate_game(agent1, agent2)
-
             print(f'>>>Completing episodes...')
             if game_record.winner == Player.black:
                 collector1.complete_episode(reward=1)
@@ -153,22 +130,33 @@ class SelfPlayer:
             else:
                 collector2.complete_episode(reward=1)
                 collector1.complete_episode(reward=-1)
-
-        # print(f'>>> Saving separate experiences...')
-        # with h5py.File(experience_filename, "a") as experience_outf:
-        #     buffer1 = rl.get_buffer(collector1)
-        #     buffer2 = rl.get_buffer(collector2)
-        #     buffer1.serialize(experience_outf)
-        #     buffer2.serialize(experience_outf)
-
         print(f'>>> Done')
-        # experience = rl.combine_experience([collector1, collector2])
-        # print(f'>>> Saving the experience file...')
-        # with h5py.File(experience_filename, "w") as experience_outf:
-        #     experience.serialize(experience_outf)
-        #     propfaid = h5py.h5p.create(h5py.h5p.FILE_ACCESS)
-        #     settings = list(propfaid.get_cache())
-        #     print(f'propfaid settings: {settings}')
+
+    def create_bot(self, number):
+        print(f'>>>Creating bot {number}...')
+        model = self.get_model()
+        # print(model.summary())
+        bot = PolicyAgent(model, self.encoder)
+        with h5py.File(self.model_copy_path, "w") as model_file:
+            bot.serialize(model_file)
+        with h5py.File(self.model_copy_path, "r") as model_file:
+            bot_from_file = load_policy_agent(model_file)
+            return bot_from_file
+
+    def get_model(self):
+        model_copy = self.get_model_copy()
+        model_file = None
+        try:
+            model_file = open(model_copy, 'r')
+        finally:
+            model_file.close()
+        with h5py.File(model_copy, "r") as model_file:
+            model = load_model(model_file)
+        return model
+
+    def get_model_copy(self):
+        finder = FileFinder()
+        return finder.copy_model_and_get_path(self.model_name)
 
 
 if __name__ == '__main__':

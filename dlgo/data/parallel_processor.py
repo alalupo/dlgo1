@@ -49,6 +49,7 @@ class GoDataProcessor:
         sampler = Sampler(data_dir=self.data_dir)
         data = sampler.draw_data(data_type, num_samples)
 
+        print(f'Mapping to workers...')
         self.map_to_workers(data_type, data)  # <1>
         if use_generator:
             generator = DataGenerator(self.data_dir, data)
@@ -68,6 +69,7 @@ class GoDataProcessor:
         return tar_file
 
     def process_zip(self, zip_file_name, data_file_name, game_list):
+        print(f'>>>Processing zip...')
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir + '/' + tar_file)
         name_list = zip_file.getnames()
@@ -116,6 +118,7 @@ class GoDataProcessor:
             chunk += 1
             current_features, features = features[:chunksize], features[chunksize:]
             current_labels, labels = labels[:chunksize], labels[chunksize:]
+            print(f'>>>Saving {feature_file}')
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
 

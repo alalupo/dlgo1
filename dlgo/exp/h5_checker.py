@@ -1,38 +1,55 @@
 import os
 from pathlib import Path
-
 import h5py
+from dlgo.tools.file_finder import FileFinder
 
 
-def get_model_path(dir_name, file_name):
+def get_file_path(dir_name, file_name):
     path = Path(__file__)
-    project_lvl_path = path.parent
-    model_dir_full_path = project_lvl_path.joinpath(dir_name)
-    model_path = str(model_dir_full_path.joinpath(file_name))
-    if not os.path.exists(model_path):
+    project_lvl_path = path.parents[2]
+    print(project_lvl_path)
+    dir_full_path = project_lvl_path.joinpath(dir_name)
+    print(dir_full_path)
+    file_full_path = str(dir_full_path.joinpath(file_name))
+    print(file_full_path)
+    if not os.path.exists(file_full_path):
         raise FileNotFoundError
-    return model_path
+    return file_full_path
+
+
+def get_model_name():
+    return 'model_simple_small_1000_20_epoch12_10proc.h5'
+
+
+def get_exp_name(model_name):
+    split_name = model_name.split('_')
+    part_name = split_name[1:]
+    part_name = 'exp_' + '_'.join(part_name)
+    return part_name
 
 
 def check_model():
-    model_dir = 'checkpoints'
-    model_name = 'model_simple_small_250_50_epoch50_37proc.h5'
-    model_path = get_model_path(model_dir, model_name)
+    finder = FileFinder()
+    model_path = finder.find_model(get_model_name())
     with h5py.File(model_path, 'r') as model:
         checker = H5ModelChecker(model)
         checker.show()
 
 
 def check_exp():
-    exp_h5file = 'exp10.h5'
-    with h5py.File(exp_h5file, "r") as exp:
+    finder = FileFinder()
+    exp_name = finder.get_new_prefix_name_from_model(get_model_name())
+    exp_path = finder.get_exp_full_path(exp_name)
+    with h5py.File(exp_path, "r") as exp:
         checker = H5ExperienceChecker(exp)
         checker.show()
         checker.short_check()
 
 
 def main():
+    print(f'Path.cwd(): {Path.cwd()}')
     check_exp()
+    check_model()
 
 
 class H5ModelChecker:
@@ -95,7 +112,10 @@ class H5ExperienceChecker:
 
     def short_check(self):
         dset = self.file['experience/states']
-        print(f'Size: {dset.shape[0]}')
+        print(f'Shape[0]: {dset.shape[0]}')
+
+    def get_max(self):
+        return self.file['experience/states'].shape[0]
 
 
 if __name__ == '__main__':

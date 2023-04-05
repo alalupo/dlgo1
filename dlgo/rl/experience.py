@@ -13,7 +13,7 @@ __all__ = [
 
 class EpExperienceCollector(object):
     def __init__(self, h5file):
-        self.h5file = h5file
+        self.str_h5file = h5file
         self._current_episode_states = []
         self._current_episode_actions = []
         self._current_episode_estimated_values = []
@@ -52,7 +52,7 @@ class EpExperienceCollector(object):
         self._current_episode_actions = []
         self._current_episode_estimated_values = []
         self.show_size(states)
-        with h5py.File(self.h5file, "a") as f:
+        with h5py.File(self.str_h5file, "a") as f:
             self.serialize(f, states, actions, rewards, advantages)
 
     @staticmethod

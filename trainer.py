@@ -40,8 +40,8 @@ def main():
     encoder = SimpleEncoder((rows, cols))
     input_shape = (rows, cols, encoder.num_planes)
     network = network_types.SmallNetwork(input_shape)
-    num_games = 250
-    epochs = 50
+    num_games = 5000
+    epochs = 3
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     batch_size = 128
     trainer = Trainer(network, encoder, optimizer, num_games, epochs, rows, cols)
@@ -74,15 +74,18 @@ class Trainer:
         processor = GoDataProcessor(encoder=self.encoder.name())
         generator = processor.load_go_data('train', num_samples=self.num_games, use_generator=True)
         test_generator = processor.load_go_data('test', num_samples=self.num_games, use_generator=True)
+        print(f'>>>Model training: generators loaded')
         checkpoint_dir = locate_directory()
         encoder_name = self.encoder.name()
         network_name = self.network.name
 
+        print(f'>>>Model training: compiling...')
         # self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         self.model.compile(optimizer=self.optimizer,
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
+        print(f'>>>Model training: fitting...')
         history = self.model.fit(
             generator.generate(batch_size, self.num_classes),
             epochs=self.epochs,
@@ -96,12 +99,14 @@ class Trainer:
                                 )
             ])
 
+        print(f'>>>Model training: evaluating...')
         score = self.model.evaluate(
             test_generator.generate(batch_size, self.num_classes),
             steps=test_generator.get_num_samples() / batch_size)
 
-        print('Test loss:', score[0])
-        print('Test accuracy:', score[1])
+        print(f'Test loss: {score[0]}')
+        print(f'Test accuracy: {score[1]}')
+        print(f'Score total: {score}')
 
         # print(history.history)
 
