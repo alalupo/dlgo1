@@ -7,9 +7,12 @@ import logging
 from dlgo.data.index_processor import KGSIndex
 from six.moves import range
 
+logger = logging.getLogger('trainingLogger')
+
 
 class Sampler:
     """Sample training and test data from zipped sgf files such that test data is kept stable."""
+
     def __init__(self, data_dir='data', num_test_games=100, cap_year=2014, seed=1337):
         self.data_dir = data_dir
         self.num_test_games = num_test_games
@@ -22,14 +25,14 @@ class Sampler:
         self.print_test_games()
 
     def print_test_games(self):
-        logging.info(f'>>> SAMPLER: Checking test games in Sampler:')
+        logger.info(f'>>>Checking test games in Sampler:')
         latest_year = 2000
         for test_game in self.test_games:
             filename = test_game[0]
             year = int(filename.split('-')[1].split('_')[0])
             if year > latest_year:
                 latest_year = year
-        print(f'SAMPLER: The latest year in the test set: {latest_year}')
+        logger.debug(f'The latest year in the test set: {latest_year}')
 
     def draw_data(self, data_type, num_samples):
         if data_type == 'test':
@@ -54,14 +57,14 @@ class Sampler:
             num_games = fileinfo['num_games']
             for i in range(num_games):
                 available_games.append((filename, i))
-        logging.info('>>> Total number of games used: ' + str(len(available_games)))
+        logger.info('>>>Total number of games used: ' + str(len(available_games)))
 
         sample_set = set()
         while len(sample_set) < num_sample_games:
             sample = random.choice(available_games)
             if sample not in sample_set:
                 sample_set.add(sample)
-        logging.info('SAMPLER: Drawn ' + str(num_sample_games) + ' samples:')
+        logger.debug(f'Drawn {str(num_sample_games)} samples')
         return list(sample_set)
 
     def draw_training_games(self):
@@ -79,7 +82,7 @@ class Sampler:
                 sample = (filename, i)
                 if sample not in self.test_games:
                     self.train_games.append(sample)
-        logging.info('SAMPLER: total num training games: ' + str(len(self.train_games)))
+        logger.debug(f'Total num training games: {len(self.train_games)}')
 
     def compute_test_samples(self):
         """If not already existing, create local file to store fixed set of test samples"""
@@ -110,14 +113,14 @@ class Sampler:
             num_games = fileinfo['num_games']
             for i in range(num_games):
                 available_games.append((filename, i))
-        logging.info('SAMPLER: total num games: ' + str(len(available_games)))
+        logger.debug(f'Total num games: {len(available_games)}')
 
         sample_set = set()
         while len(sample_set) < num_sample_games:
             sample = random.choice(available_games)
             if sample not in self.test_games:
                 sample_set.add(sample)
-        logging.info('SAMPLER: Drawn ' + str(num_sample_games) + ' samples:')
+        logger.debug(f'Drawn {num_sample_games} samples.')
         return list(sample_set)
 
     def draw_all_training(self):
@@ -136,11 +139,11 @@ class Sampler:
                 continue
             for i in range(num_games):
                 available_games.append((filename, i))
-        logging.info('SAMPLER: total num games: ' + str(len(available_games)))
+        logger.debug(f'Total num games: {len(available_games)}')
 
         sample_set = set()
         for sample in available_games:
             if sample not in self.test_games:
                 sample_set.add(sample)
-        logging.info('SAMPLER: Drawn all samples, ie ' + str(len(sample_set)) + ' samples:')
+        logger.debug(f'Drawn all samples, ie : {len(sample_set)} samples.')
         return list(sample_set)

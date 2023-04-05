@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 import logging
+import logging.config
 
 from keras.models import Sequential
 from keras.layers.core import Dense
@@ -12,6 +13,12 @@ from dlgo.data.parallel_processor import GoDataProcessor
 from dlgo.encoders.simple import SimpleEncoder
 from dlgo.networks import network_types
 
+logging.config.fileConfig('train_logging.conf')
+logger = logging.getLogger('trainingLogger')
+# log_handler1 = logging.handlers.console
+# log_handler2 = logging.handlers.file
+# logger.addHandler(log_handler1)
+# logger.addHandler(log_handler2)
 
 def locate_directory():
     path = Path(__file__)
@@ -36,8 +43,9 @@ def show_intro():
 
 def main():
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    logging.basicConfig(filename='trainer.log', format='%(levelname)s:%(message)s', level=logging.INFO)
-    logging.info('Started')
+    # logging.basicConfig(filename='trainer.log', format='%(levelname)s: %(asctime)s %(message)s', level=logging.INFO)
+
+    logger.info('Started')
     show_intro()
     rows, cols = 19, 19
     encoder = SimpleEncoder((rows, cols))
@@ -49,7 +57,7 @@ def main():
     batch_size = 128
     trainer = Trainer(network, encoder, optimizer, num_games, epochs, rows, cols)
     trainer.train_model(optimizer, batch_size)
-    logging.info('Finished')
+    logger.info('Finished')
 
 
 class Trainer:
@@ -69,27 +77,27 @@ class Trainer:
         for layer in network_layers:
             model.add(layer)
         model.add(Dense(self.num_classes, activation='softmax'))
-        logging.info(f'Model summary:')
-        logging.info(model.summary())
-        logging.info(f'********************************************************************************************')
+        logger.info(f'Model summary:')
+        logger.info(model.summary())
+        logger.info(f'********************************************************************************************')
         return model
 
     def train_model(self, optimizer='adadelta', batch_size=128):
         processor = GoDataProcessor(encoder=self.encoder.name())
         generator = processor.load_go_data('train', num_samples=self.num_games, use_generator=True)
         test_generator = processor.load_go_data('test', num_samples=self.num_games, use_generator=True)
-        logging.info(f'>>>Model training: generators loaded')
+        logger.info(f'>>>Model training: generators loaded')
         checkpoint_dir = locate_directory()
         encoder_name = self.encoder.name()
         network_name = self.network.name
 
-        logging.info(f'>>>Model training: compiling...')
+        logger.debug(f'>>>Model training: compiling...')
         # self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         self.model.compile(optimizer=self.optimizer,
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
-        logging.info(f'>>>Model training: fitting...')
+        logger.debug(f'>>>Model training: fitting...')
         history = self.model.fit(
             generator.generate(batch_size, self.num_classes),
             epochs=self.epochs,
@@ -103,14 +111,14 @@ class Trainer:
                                 )
             ])
 
-        logging.info(f'>>>Model training: evaluating...')
+        logger.debug(f'>>>Model training: evaluating...')
         score = self.model.evaluate(
             test_generator.generate(batch_size, self.num_classes),
             steps=test_generator.get_num_samples() / batch_size)
 
-        logging.info(f'Test loss: {score[0]}')
-        logging.info(f'Test accuracy: {score[1]}')
-        logging.info(f'Score total: {score}')
+        logger.debug(f'Test loss: {score[0]}')
+        logger.debug(f'Test accuracy: {score[1]}')
+        logger.debug(f'Score total: {score}')
 
         # print(history.history)
 
