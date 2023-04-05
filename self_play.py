@@ -1,5 +1,6 @@
 import argparse
 import os
+import logging
 from collections import namedtuple
 
 import h5py
@@ -62,13 +63,21 @@ def simulate_game(black_player, white_player):
 
     print_board(game.board)
     game_result = scoring.compute_game_result(game)
-    print(game_result)
+    logging.info(game_result)
 
     return GameRecord(
         moves=moves,
         winner=game_result.winner,
         margin=game_result.winning_margin,
     )
+
+
+def main():
+    logging.basicConfig(filename='self_play.log', format='%(levelname)s:%(message)s', level=logging.INFO)
+    logging.info('Started')
+    player = SelfPlayer()
+    player.play()
+    logging.info('Finished')
 
 
 class SelfPlayer:
@@ -97,12 +106,13 @@ class SelfPlayer:
 
     def play(self):
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+        logging.info(f'>>>Starting self play of {self.model_name}')
         parser = argparse.ArgumentParser()
         parser.add_argument('--num-games', '-n', type=int, default=10)
         # parser.add_argument('--experience-out', '-e', required=True)
 
-        print(f'Listing GPU devices:')
-        print(tf.config.list_physical_devices('GPU'))
+        logging.info(f'Listing GPU devices:')
+        logging.info(tf.config.list_physical_devices('GPU'))
 
         args = parser.parse_args()
         num_games = args.num_games
@@ -119,21 +129,21 @@ class SelfPlayer:
         agent2.set_collector(collector2)
 
         for i in range(num_games):
-            print('Simulating game %d/%d...' % (i + 1, num_games))
+            logging.info('Simulating game %d/%d...' % (i + 1, num_games))
             collector1.begin_episode()
             collector2.begin_episode()
             game_record = simulate_game(agent1, agent2)
-            print(f'>>>Completing episodes...')
+            logging.info(f'>>>Completing episodes...')
             if game_record.winner == Player.black:
                 collector1.complete_episode(reward=1)
                 collector2.complete_episode(reward=-1)
             else:
                 collector2.complete_episode(reward=1)
                 collector1.complete_episode(reward=-1)
-        print(f'>>> Done')
+        logging.info(f'>>> Done')
 
     def create_bot(self, number):
-        print(f'>>>Creating bot {number}...')
+        logging.info(f'>>>Creating bot {number}...')
         model = self.get_model()
         # print(model.summary())
         bot = PolicyAgent(model, self.encoder)
@@ -160,5 +170,4 @@ class SelfPlayer:
 
 
 if __name__ == '__main__':
-    player = SelfPlayer()
-    player.play()
+    main()

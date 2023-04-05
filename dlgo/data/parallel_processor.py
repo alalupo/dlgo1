@@ -8,6 +8,7 @@ import shutil
 import numpy as np
 import multiprocessing
 import sys
+import logging
 from keras.utils import to_categorical
 
 from dlgo.gosgf import Sgf_game
@@ -44,12 +45,13 @@ class GoDataProcessor:
     def load_go_data(self, data_type='train', num_samples=1000,
                      use_generator=False):
         index = KGSIndex(data_directory=self.data_dir)
+        logging.info(f'>>>PROCESSOR: Downloading files...')
         index.download_files()
-
+        logging.info(f'>>>PROCESSOR: Calling the sampler...')
         sampler = Sampler(data_dir=self.data_dir)
         data = sampler.draw_data(data_type, num_samples)
 
-        print(f'Mapping to workers...')
+        logging.info(f'>>>PROCESSOR: Mapping to workers...')
         self.map_to_workers(data_type, data)  # <1>
         if use_generator:
             generator = DataGenerator(self.data_dir, data)
@@ -59,6 +61,7 @@ class GoDataProcessor:
             return features_and_labels  # <3>
 
     def unzip_data(self, zip_file_name):
+        logging.info(f'>>>PROCESSOR: unzipping data...')
         this_gz = gzip.open(self.data_dir + '/' + zip_file_name)
 
         tar_file = zip_file_name[0:-3]
@@ -69,7 +72,7 @@ class GoDataProcessor:
         return tar_file
 
     def process_zip(self, zip_file_name, data_file_name, game_list):
-        print(f'>>>Processing zip...')
+        logging.info(f'>>>PROCESSOR: Processing zip...')
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir + '/' + tar_file)
         name_list = zip_file.getnames()
@@ -118,7 +121,7 @@ class GoDataProcessor:
             chunk += 1
             current_features, features = features[:chunksize], features[chunksize:]
             current_labels, labels = labels[:chunksize], labels[chunksize:]
-            print(f'>>>Saving {feature_file}')
+            logging.info(f'>>>PROCESSOR: Saving {feature_file}')
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
 

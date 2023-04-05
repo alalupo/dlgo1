@@ -1,16 +1,15 @@
 """Policy gradient learning."""
-import numpy as np
 import gc
+
+import numpy as np
 import tensorflow as tf
-from keras import backend as K
 from keras.optimizers import SGD
 
-from dlgo.agent.base import Agent
-from dlgo.agent.helpers import is_point_an_eye
-from dlgo import encoders
-from dlgo.encoders.base import get_encoder_by_name
 from dlgo import goboard
 from dlgo import kerasutil
+from dlgo.agent.base import Agent
+from dlgo.agent.helpers import is_point_an_eye
+from dlgo.encoders.base import get_encoder_by_name
 
 __all__ = [
     'PolicyAgent',

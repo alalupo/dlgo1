@@ -1,5 +1,6 @@
 import numpy as np
 import h5py
+import logging
 
 __all__ = [
     'EpExperienceCollector',
@@ -23,7 +24,7 @@ class EpExperienceCollector(object):
         return np.array(states), np.array(actions), np.array(rewards), np.array(advantages)
 
     def show_size(self, array):
-        print(f'{self.__class__}: {round(array.nbytes / 1000000, 2)} MB')
+        logging.info(f'EXPERIENCE COLLECTOR: {round(array.nbytes / 1000000, 2)} MB')
 
     def begin_episode(self):
         self._current_episode_states = []
@@ -37,7 +38,7 @@ class EpExperienceCollector(object):
 
     def complete_episode(self, reward):
         num_states = len(self._current_episode_states)
-        print(f'num_states in current episode: {num_states}')
+        logging.info(f'EXPERIENCE COLLECTOR: num_states in current episode: {num_states}')
         rewards = [reward for _ in range(num_states)]
         advantages = []
         for i in range(num_states):
