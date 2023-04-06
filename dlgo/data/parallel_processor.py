@@ -24,8 +24,8 @@ logger = logging.getLogger('trainingLogger')
 
 def worker(jobinfo):
     try:
-        clazz, encoder, zip_file, data_file_name, game_list = jobinfo
-        clazz(encoder=encoder).process_zip(zip_file, data_file_name, game_list)
+        clazz, encoder, zip_file, data_file_name, game_list, data_dir = jobinfo
+        clazz(encoder=encoder, data_directory=data_dir).process_zip(zip_file, data_file_name, game_list)
     except (KeyboardInterrupt, SystemExit):
         raise Exception('>>> Exiting child process.')
 
@@ -87,7 +87,7 @@ class GoDataProcessor:
 
         counter = 0
         for index in game_list:
-            logger.info(f'index {index} / {len(game_list)}')
+            logger.info(f'Index {index} / {len(game_list)} of the game list')
             name = name_list[index + 1]
             if not name.endswith('.sgf'):
                 raise ValueError(name + ' is not a valid sgf')
@@ -194,7 +194,8 @@ class GoDataProcessor:
             data_file_name = base_name + data_type
             if not os.path.isfile(self.data_dir + '/' + data_file_name):
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
-                                        data_file_name, indices_by_zip_name[zip_name]))
+                                        data_file_name, indices_by_zip_name[zip_name],
+                                        self.data_dir))
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
         logger.info(f'The number of CPU: {cores}')
