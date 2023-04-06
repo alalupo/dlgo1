@@ -47,13 +47,12 @@ class GoDataProcessor:
     def load_go_data(self, data_type='train', num_samples=1000,
                      use_generator=False):
         index = KGSIndex(data_directory=self.data_dir)
-        logger.debug(f'>>>Downloading files...')
+        logger.info(f'>>>Downloading files...')
         index.download_files()
-        logger.debug(f'>>>Calling the sampler...')
+        logger.info(f'>>>Calling the sampler...')
         sampler = Sampler(data_dir=self.data_dir)
         data = sampler.draw_data(data_type, num_samples)
 
-        logger.info(f'>>>Mapping to workers...')
         self.map_to_workers(data_type, data)  # <1>
         if use_generator:
             generator = DataGenerator(self.data_dir, data)
@@ -63,7 +62,6 @@ class GoDataProcessor:
             return features_and_labels  # <3>
 
     def unzip_data(self, zip_file_name):
-        logger.info(f'>>>Unzipping data...')
         this_gz = gzip.open(self.data_dir + '/' + zip_file_name)
 
         tar_file = zip_file_name[0:-3]
@@ -74,7 +72,6 @@ class GoDataProcessor:
         return tar_file
 
     def process_zip(self, zip_file_name, data_file_name, game_list):
-        logger.info(f'>>>Processing zip...')
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir + '/' + tar_file)
         name_list = zip_file.getnames()
@@ -117,14 +114,13 @@ class GoDataProcessor:
 
         chunk = 0  # Due to files with large content, split up after chunksize
         chunksize = 1024
-        logger.debug(f'features shape: {features.shape}')
+        logger.info(f'features shape: {features.shape}')
         while features.shape[0] >= chunksize:
             feature_file = feature_file_base % chunk
             label_file = label_file_base % chunk
             chunk += 1
             current_features, features = features[:chunksize], features[chunksize:]
             current_labels, labels = labels[:chunksize], labels[chunksize:]
-            logger.info(f'>>>Saving {feature_file}')
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
 
@@ -191,27 +187,38 @@ class GoDataProcessor:
             if not os.path.isfile(self.data_dir + '/' + data_file_name):
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
-                logger.info(f'zips appended:')
-                logger.info(f'self.__class__: {self.__class__}')
-                logger.info(f'self.encoder_string: {self.encoder_string}')
-                logger.info(f'zip_name: {zip_name}')
-                logger.info(f'data_file_name: {data_file_name}')
-                logger.info(f'indices by zip name:')
-                for index in indices_by_zip_name:
-                    logger.info(f'{index}')
+                # logger.info(f'zips appended:')
+                # logger.info(f'self.__class__: {self.__class__}')
+                # logger.info(f'self.encoder_string: {self.encoder_string}')
+                # logger.info(f'zip_name: {zip_name}')
+                # logger.info(f'data_file_name: {data_file_name}')
+                # logger.info(f'indices by zip name:')
+                # for index in indices_by_zip_name:
+                #     logger.info(f'{index}')
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pool = multiprocessing.Pool(processes=cores)
-        p = pool.map_async(worker, zips_to_process)
-        try:
-            _ = p.get()
-            logger.info(f'The result of p.get is:')
-            logger.info(f'{_}')
-        except KeyboardInterrupt:  # Caught keyboard interrupt, terminating workers
-            logger.warning(f'Keyboard interrupt')
-            pool.terminate()
-            pool.join()
-            sys.exit(-1)
+        logger.info(f'The number of CPU: {cores}')
+        with multiprocessing.Pool(processes=cores) as pool:
+            p = pool.map_async(worker, zips_to_process)
+            try:
+                _ = p.get()
+                logger.info(f'WORKER FINISHED')
+            except KeyboardInterrupt:  # Caught keyboard interrupt, terminating workers
+                logger.warning(f'Keyboard interrupt')
+                pool.terminate()
+                pool.join()
+                sys.exit(-1)
+        # pool = multiprocessing.Pool(processes=cores)
+        # p = pool.map_async(worker, zips_to_process)
+        # try:
+        #     _ = p.get()
+        #     logger.info(f'The result of p.get is:')
+        #     logger.info(f'{_}')
+        # except KeyboardInterrupt:  # Caught keyboard interrupt, terminating workers
+        #     logger.warning(f'Keyboard interrupt')
+        #     pool.terminate()
+        #     pool.join()
+        #     sys.exit(-1)
 
     def num_total_examples(self, zip_file, game_list, name_list):
         total_examples = 0
@@ -233,3 +240,12 @@ class GoDataProcessor:
             else:
                 raise ValueError(name + ' is not a valid sgf')
         return total_examples
+
+    def task(self, arg):
+        print(f'dupa: {arg}', flush=True)
+
+    def dupa(self):
+        with multiprocessing.Pool() as pool:
+            result = pool.map_async(self.task, range(10))
+            for result in result.get():
+                print(f'Got result: {result}', flush=True)

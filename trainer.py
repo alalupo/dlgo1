@@ -1,13 +1,13 @@
-from pathlib import Path
-import os
-import logging
 import logging.config
+import os
+from pathlib import Path
 
-from keras.models import Sequential
-from keras.layers.core import Dense
-from keras.callbacks import ModelCheckpoint
-import tensorflow as tf
 import matplotlib.pyplot as plt
+import tensorflow as tf
+from keras.callbacks import ModelCheckpoint
+from keras.layers.core import Dense
+from keras.models import Sequential
+import keras.backend as K
 
 from dlgo.data.parallel_processor import GoDataProcessor
 from dlgo.encoders.simple import SimpleEncoder
@@ -15,44 +15,38 @@ from dlgo.networks import network_types
 
 logging.config.fileConfig('train_logging.conf')
 logger = logging.getLogger('trainingLogger')
-# log_handler1 = logging.handlers.console
-# log_handler2 = logging.handlers.file
-# logger.addHandler(log_handler1)
-# logger.addHandler(log_handler2)
+
 
 def locate_directory():
     path = Path(__file__)
     project_lvl_path = path.parent
     model_directory_name = 'checkpoints'
     data_directory = project_lvl_path.joinpath(model_directory_name)
-    if os.path.exists(data_directory):
-        print(f"{data_directory} exists.")
-    else:
+    if not os.path.exists(data_directory):
         raise FileNotFoundError
     return str(data_directory)
 
 
 def show_intro():
-    print(f'********************************************************************************************')
+    print(f'*******************************************************************')
     print(f'Don\'t forget to clean up data directory of npy files before you start training a new model.')
     print(f'Put into the terminal the following command:')
     print(f'    find ./data/ -name \*.npy -delete')
     network_types.show_data_format()
-    print(f'********************************************************************************************')
+    print(f'*******************************************************************')
 
 
 def main():
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    # logging.basicConfig(filename='trainer.log', format='%(levelname)s: %(asctime)s %(message)s', level=logging.INFO)
-
     logger.info('Started')
     show_intro()
+    K.clear_session()
     rows, cols = 19, 19
     encoder = SimpleEncoder((rows, cols))
     input_shape = (rows, cols, encoder.num_planes)
     network = network_types.SmallNetwork(input_shape)
-    num_games = 5000
-    epochs = 3
+    num_games = 100
+    epochs = 2
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     batch_size = 128
     trainer = Trainer(network, encoder, optimizer, num_games, epochs, rows, cols)
@@ -79,10 +73,11 @@ class Trainer:
         model.add(Dense(self.num_classes, activation='softmax'))
         logger.info(f'Model summary:')
         logger.info(model.summary())
-        logger.info(f'********************************************************************************************')
+        logger.info(f'**************************************************************')
         return model
 
     def train_model(self, optimizer='adadelta', batch_size=128):
+        K.clear_session()
         processor = GoDataProcessor(encoder=self.encoder.name())
         generator = processor.load_go_data('train', num_samples=self.num_games, use_generator=True)
         test_generator = processor.load_go_data('test', num_samples=self.num_games, use_generator=True)
@@ -91,16 +86,17 @@ class Trainer:
         encoder_name = self.encoder.name()
         network_name = self.network.name
 
-        logger.debug(f'>>>Model training: compiling...')
+        logger.info(f'>>>Model training: compiling...')
         # self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         self.model.compile(optimizer=self.optimizer,
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
-        logger.debug(f'>>>Model training: fitting...')
+        logger.info(f'>>>Model training: fitting...')
         history = self.model.fit(
             generator.generate(batch_size, self.num_classes),
             epochs=self.epochs,
+            verbose=2,
             steps_per_epoch=generator.get_num_samples() / batch_size,
             validation_data=test_generator.generate(batch_size, self.num_classes),
             validation_steps=test_generator.get_num_samples() / batch_size,
@@ -111,14 +107,13 @@ class Trainer:
                                 )
             ])
 
-        logger.debug(f'>>>Model training: evaluating...')
+        logger.info(f'>>>Model training: evaluating...')
         score = self.model.evaluate(
             test_generator.generate(batch_size, self.num_classes),
             steps=test_generator.get_num_samples() / batch_size)
 
-        logger.debug(f'Test loss: {score[0]}')
-        logger.debug(f'Test accuracy: {score[1]}')
-        logger.debug(f'Score total: {score}')
+        logger.info(f'Test loss: {score[0]}')
+        logger.info(f'Test accuracy: {score[1]}')
 
         # print(history.history)
 
