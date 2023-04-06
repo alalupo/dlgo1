@@ -6,10 +6,12 @@ import tarfile
 import gzip
 import shutil
 import numpy as np
-import multiprocessing
 import sys
 import logging
 from keras.utils import to_categorical
+import multiprocessing
+from multiprocessing import set_start_method
+from multiprocessing import get_context
 
 from dlgo.gosgf import Sgf_game
 from dlgo.goboard_fast import Board, GameState, Move
@@ -75,11 +77,9 @@ class GoDataProcessor:
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir + '/' + tar_file)
         name_list = zip_file.getnames()
-        logger.info(f'Getting total_examples')
         total_examples = self.num_total_examples(zip_file, game_list, name_list)
         logger.info(f'Total examples: {total_examples}')
         shape = self.encoder.shape()
-        logger.info(f'Inserting...')
         feature_shape = np.insert(shape, 0, np.asarray([total_examples]))
         features = np.zeros(feature_shape)
         logger.info(f'features with zeros size: {round(features.nbytes / 1000000, 2)} MB')
@@ -87,7 +87,6 @@ class GoDataProcessor:
 
         counter = 0
         for index in game_list:
-            logger.info(f'Index {index} / {len(game_list)} of the game list')
             name = name_list[index + 1]
             if not name.endswith('.sgf'):
                 raise ValueError(name + ' is not a valid sgf')
@@ -197,9 +196,10 @@ class GoDataProcessor:
                                         data_file_name, indices_by_zip_name[zip_name],
                                         self.data_dir))
 
+        set_start_method("spawn")
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
         logger.info(f'The number of CPU: {cores}')
-        with multiprocessing.Pool(processes=cores) as pool:
+        with get_context("spawn").Pool(processes=cores, initializer=self.start_process) as pool:
             p = pool.map_async(worker, zips_to_process)
             try:
                 _ = p.get()
@@ -241,4 +241,9 @@ class GoDataProcessor:
             else:
                 raise ValueError(name + ' is not a valid sgf')
         return total_examples
+
+    @staticmethod
+    def start_process():
+        print(f'Starting {multiprocessing.current_process().name}')
+
 
