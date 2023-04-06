@@ -116,6 +116,7 @@ class GoDataProcessor:
         chunksize = 1024
         logger.info(f'features shape: {features.shape}')
         while features.shape[0] >= chunksize:
+            print(f'features.shape[0] = {features.shape[0]}')
             feature_file = feature_file_base % chunk
             label_file = label_file_base % chunk
             chunk += 1
@@ -187,14 +188,6 @@ class GoDataProcessor:
             if not os.path.isfile(self.data_dir + '/' + data_file_name):
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
-                # logger.info(f'zips appended:')
-                # logger.info(f'self.__class__: {self.__class__}')
-                # logger.info(f'self.encoder_string: {self.encoder_string}')
-                # logger.info(f'zip_name: {zip_name}')
-                # logger.info(f'data_file_name: {data_file_name}')
-                # logger.info(f'indices by zip name:')
-                # for index in indices_by_zip_name:
-                #     logger.info(f'{index}')
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
         logger.info(f'The number of CPU: {cores}')
@@ -241,11 +234,3 @@ class GoDataProcessor:
                 raise ValueError(name + ' is not a valid sgf')
         return total_examples
 
-    def task(self, arg):
-        print(f'dupa: {arg}', flush=True)
-
-    def dupa(self):
-        with multiprocessing.Pool() as pool:
-            result = pool.map_async(self.task, range(10))
-            for result in result.get():
-                print(f'Got result: {result}', flush=True)

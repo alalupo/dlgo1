@@ -96,7 +96,6 @@ class Trainer:
         history = self.model.fit(
             generator.generate(batch_size, self.num_classes),
             epochs=self.epochs,
-            verbose=2,
             steps_per_epoch=generator.get_num_samples() / batch_size,
             validation_data=test_generator.generate(batch_size, self.num_classes),
             validation_steps=test_generator.get_num_samples() / batch_size,
