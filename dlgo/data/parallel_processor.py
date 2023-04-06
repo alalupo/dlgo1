@@ -128,6 +128,8 @@ class GoDataProcessor:
             current_labels, labels = labels[:chunksize], labels[chunksize:]
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
+            logger.info(f'Files Saved')
+        logger.info(f'Zip processing done.')
 
     def consolidate_games(self, name, samples):
         files_needed = set(file_name for file_name, index in samples)
