@@ -75,7 +75,9 @@ class GoDataProcessor:
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir + '/' + tar_file)
         name_list = zip_file.getnames()
+        logger.info(f'Getting total_examples')
         total_examples = self.num_total_examples(zip_file, game_list, name_list)
+        logger.info(f'Total examples: {total_examples}')
         shape = self.encoder.shape()
         logger.info(f'Inserting...')
         feature_shape = np.insert(shape, 0, np.asarray([total_examples]))
@@ -116,6 +118,7 @@ class GoDataProcessor:
         chunk = 0  # Due to files with large content, split up after chunk-size
         chunksize = 1024
         logger.info(f'features shape: {features.shape}')
+        logger.info(f'features with data size: {round(features.nbytes / 1000000, 2)} MB')
         while features.shape[0] >= chunksize:
             print(f'features.shape[0] = {features.shape[0]}')
             feature_file = feature_file_base % chunk
