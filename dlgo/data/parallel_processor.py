@@ -87,6 +87,7 @@ class GoDataProcessor:
 
         counter = 0
         for index in game_list:
+            logger.info(f'index {index} / {len(game_list)}')
             name = name_list[index + 1]
             if not name.endswith('.sgf'):
                 raise ValueError(name + ' is not a valid sgf')
