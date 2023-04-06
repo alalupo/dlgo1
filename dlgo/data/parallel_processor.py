@@ -196,7 +196,7 @@ class GoDataProcessor:
                                         data_file_name, indices_by_zip_name[zip_name],
                                         self.data_dir))
 
-        set_start_method("spawn")
+        # set_start_method("spawn")
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
         logger.info(f'The number of CPU: {cores}')
         with get_context("spawn").Pool(processes=cores, initializer=self.start_process) as pool:
