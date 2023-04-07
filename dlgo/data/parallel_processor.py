@@ -1,33 +1,33 @@
-import os
 import glob
-import os.path
-from pathlib import Path
-import tarfile
 import gzip
-import shutil
-import numpy as np
-import sys
 import logging
-from keras.utils import to_categorical
 import multiprocessing
-from multiprocessing import set_start_method
+import os
+import os.path
+import shutil
+import sys
+import tarfile
 from multiprocessing import get_context
+from pathlib import Path
 
-from dlgo.gosgf import Sgf_game
-from dlgo.goboard_fast import Board, GameState, Move
-from dlgo.gotypes import Player, Point
+import numpy as np
+from keras.utils import to_categorical
+
+from dlgo.data.generator import DataGenerator
 from dlgo.data.index_processor import KGSIndex
 from dlgo.data.sampling import Sampler
-from dlgo.data.generator import DataGenerator
 from dlgo.encoders.base import get_encoder_by_name
+from dlgo.goboard_fast import Board, GameState, Move
+from dlgo.gosgf import Sgf_game
+from dlgo.gotypes import Player, Point
 
 logger = logging.getLogger('trainingLogger')
 
 
 def worker(jobinfo):
     try:
-        clazz, encoder, zip_file, data_file_name, game_list, data_dir = jobinfo
-        clazz(encoder=encoder, data_directory=data_dir).process_zip(zip_file, data_file_name, game_list)
+        clazz, encoder, zip_file, data_file_name, game_list = jobinfo
+        clazz(encoder=encoder).process_zip(zip_file, data_file_name, game_list)
     except (KeyboardInterrupt, SystemExit):
         raise Exception('>>> Exiting child process.')
 
@@ -41,7 +41,7 @@ def locate_data_directory():
 
 
 class GoDataProcessor:
-    def __init__(self, encoder='simple', data_directory='data'):
+    def __init__(self, encoder='simple'):
         self.encoder_string = encoder
         self.encoder = get_encoder_by_name(encoder, 19)
         self.data_dir = locate_data_directory()
@@ -49,12 +49,9 @@ class GoDataProcessor:
     def load_go_data(self, data_type='train', num_samples=1000,
                      use_generator=False):
         index = KGSIndex(data_directory=self.data_dir)
-        logger.info(f'>>>Downloading files...')
         index.download_files()
-        logger.info(f'>>>Calling the sampler...')
         sampler = Sampler(data_dir=self.data_dir)
         data = sampler.draw_data(data_type, num_samples)
-
         self.map_to_workers(data_type, data)  # <1>
         if use_generator:
             generator = DataGenerator(self.data_dir, data)
@@ -65,10 +62,8 @@ class GoDataProcessor:
 
     def unzip_data(self, zip_file_name):
         this_gz = gzip.open(self.data_dir + '/' + zip_file_name)
-
         tar_file = zip_file_name[0:-3]
         this_tar = open(self.data_dir + '/' + tar_file, 'wb')
-
         shutil.copyfileobj(this_gz, this_tar)
         this_tar.close()
         return tar_file
@@ -78,11 +73,9 @@ class GoDataProcessor:
         zip_file = tarfile.open(self.data_dir + '/' + tar_file)
         name_list = zip_file.getnames()
         total_examples = self.num_total_examples(zip_file, game_list, name_list)
-        logger.info(f'Total examples: {total_examples}')
         shape = self.encoder.shape()
         feature_shape = np.insert(shape, 0, np.asarray([total_examples]))
         features = np.zeros(feature_shape)
-        logger.info(f'features with zeros size: {round(features.nbytes / 1000000, 2)} MB')
         labels = np.zeros((total_examples,))
 
         counter = 0
@@ -117,10 +110,8 @@ class GoDataProcessor:
 
         chunk = 0  # Due to files with large content, split up after chunk-size
         chunksize = 1024
-        logger.info(f'features shape: {features.shape}')
         logger.info(f'features with data size: {round(features.nbytes / 1000000, 2)} MB')
         while features.shape[0] >= chunksize:
-            print(f'features.shape[0] = {features.shape[0]}')
             feature_file = feature_file_base % chunk
             label_file = label_file_base % chunk
             chunk += 1
@@ -128,8 +119,7 @@ class GoDataProcessor:
             current_labels, labels = labels[:chunksize], labels[chunksize:]
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
-            logger.info(f'Files Saved')
-        logger.info(f'Zip processing done.')
+        logger.info(f'=== Zip processing done. ===')
 
     def consolidate_games(self, name, samples):
         files_needed = set(file_name for file_name, index in samples)
@@ -193,19 +183,18 @@ class GoDataProcessor:
             data_file_name = base_name + data_type
             if not os.path.isfile(self.data_dir + '/' + data_file_name):
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
-                                        data_file_name, indices_by_zip_name[zip_name],
-                                        self.data_dir))
+                                        data_file_name, indices_by_zip_name[zip_name]))
 
-        # set_start_method("spawn")
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        logger.info(f'The number of CPU: {cores}')
-        with get_context("spawn").Pool(processes=cores, initializer=self.start_process) as pool:
+        pnum = 1 # By default pnum = cores but can be set to 1 if no multiprocessing needed
+        print(f'The number of CPU: {cores}')
+        print(f'The actual number of parallel processes: {pnum}')
+        with get_context("spawn").Pool(processes=pnum, initializer=self.start_process) as pool:
             p = pool.map_async(worker, zips_to_process)
             try:
                 _ = p.get()
-                logger.info(f'WORKER FINISHED')
             except KeyboardInterrupt:  # Caught keyboard interrupt, terminating workers
-                logger.warning(f'Keyboard interrupt')
+                print(f'Keyboard interrupt')
                 pool.terminate()
                 pool.join()
                 sys.exit(-1)
@@ -245,5 +234,3 @@ class GoDataProcessor:
     @staticmethod
     def start_process():
         print(f'Starting {multiprocessing.current_process().name}')
-
-

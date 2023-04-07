@@ -28,29 +28,31 @@ def locate_directory():
 
 
 def show_intro():
-    print(f'*******************************************************************')
+    print(f'*' * 80)
     print(f'Don\'t forget to clean up data directory of npy files before you start training a new model.')
     print(f'Put into the terminal the following command:')
     print(f'    find ./data/ -name \*.npy -delete')
     network_types.show_data_format()
-    print(f'*******************************************************************')
+    print(f'*' * 80)
 
 
 def main():
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     logger.info('Started')
     show_intro()
-    K.clear_session()
     rows, cols = 19, 19
     encoder = SimpleEncoder((rows, cols))
     input_shape = (rows, cols, encoder.num_planes)
     network = network_types.SmallNetwork(input_shape)
     num_games = 100
     epochs = 2
+    logger.info(f'GAMES: {num_games}')
+    logger.info(f'EPOCHS: {epochs}')
+    K.clear_session()
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     batch_size = 128
     trainer = Trainer(network, encoder, optimizer, num_games, epochs, rows, cols)
-    trainer.train_model(optimizer, batch_size)
+    trainer.train_model(batch_size)
     logger.info('Finished')
 
 
@@ -71,28 +73,29 @@ class Trainer:
         for layer in network_layers:
             model.add(layer)
         model.add(Dense(self.num_classes, activation='softmax'))
+        print(f'*' * 80)
         logger.info(f'Model summary:')
         logger.info(model.summary())
-        logger.info(f'**************************************************************')
+        print(f'*' * 80)
         return model
 
-    def train_model(self, optimizer='adadelta', batch_size=128):
+    def train_model(self, batch_size=128):
         K.clear_session()
         processor = GoDataProcessor(encoder=self.encoder.name())
         generator = processor.load_go_data('train', num_samples=self.num_games, use_generator=True)
+        logger.info(f'>>>Train generator loaded')
         test_generator = processor.load_go_data('test', num_samples=self.num_games, use_generator=True)
-        logger.info(f'>>>Model training: generators loaded')
+        logger.info(f'>>>Test generator loaded')
         checkpoint_dir = locate_directory()
         encoder_name = self.encoder.name()
         network_name = self.network.name
 
-        logger.info(f'>>>Model training: compiling...')
-        # self.model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        logger.info(f'>>>Model compiling...')
         self.model.compile(optimizer=self.optimizer,
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
-        logger.info(f'>>>Model training: fitting...')
+        logger.info(f'>>>Model fitting...')
         history = self.model.fit(
             generator.generate(batch_size, self.num_classes),
             epochs=self.epochs,
@@ -106,11 +109,12 @@ class Trainer:
                                 )
             ])
 
-        logger.info(f'>>>Model training: evaluating...')
+        logger.info(f'>>>Model evaluating...')
         score = self.model.evaluate(
             test_generator.generate(batch_size, self.num_classes),
             steps=test_generator.get_num_samples() / batch_size)
 
+        print(f'*' * 80)
         logger.info(f'Test loss: {score[0]}')
         logger.info(f'Test accuracy: {score[1]}')
 
@@ -138,12 +142,6 @@ class Trainer:
         plt.ylabel('Accuracy')
         plt.legend()
         plt.savefig(f'{checkpoint_dir}/graph_{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_accuracy.png')
-
-        # # serialize model to JSON
-        # model_json = self.model.to_json()
-        # with open(checkpoint_dir + '/' + encoder_name + '_' + network_name + '_' + 'model.json', "w") as json_file:
-        #     json_file.write(model_json)
-        # print("Saved model to disk")
 
 
 if __name__ == '__main__':
