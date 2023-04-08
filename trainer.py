@@ -38,7 +38,7 @@ def show_intro():
 
 def main():
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    logger.info('Started')
+    logger.info('TRAINER: STARTED')
     show_intro()
     rows, cols = 19, 19
     encoder = SimpleEncoder((rows, cols))
@@ -53,7 +53,7 @@ def main():
     batch_size = 128
     trainer = Trainer(network, encoder, optimizer, num_games, epochs, rows, cols)
     trainer.train_model(batch_size)
-    logger.info('Finished')
+    logger.info('TRAINER: FINISHED')
 
 
 class Trainer:
@@ -89,12 +89,10 @@ class Trainer:
         checkpoint_dir = locate_directory()
         encoder_name = self.encoder.name()
         network_name = self.network.name
-
         print(f'>>>Model compiling...')
         self.model.compile(optimizer=self.optimizer,
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
-
         print(f'>>>Model fitting...')
         history = self.model.fit(
             generator.generate(batch_size, self.num_classes),
@@ -108,18 +106,16 @@ class Trainer:
                                 save_best_only=True
                                 )
             ])
-
         print(f'>>>Model evaluating...')
         score = self.model.evaluate(
             test_generator.generate(batch_size, self.num_classes),
             steps=test_generator.get_num_samples() / batch_size)
-
         print(f'*' * 80)
         logger.info(f'Test loss: {score[0]}')
         logger.info(f'Test accuracy: {score[1]}')
+        self.save_plots(history, checkpoint_dir, encoder_name, network_name)
 
-        # print(history.history)
-
+    def save_plots(self, history, checkpoint_dir, encoder_name, network_name):
         loss = history.history['loss']
         val_loss = history.history['val_loss']
         epochs = range(1, len(loss) + 1)

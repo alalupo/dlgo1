@@ -54,9 +54,6 @@ def clear_screen():
         print(chr(27) + "[2J")
 
 
-# NOTE: MoveAge is only used in chapter 13, and doesn't make it to the main text.
-# This feature will only be implemented in goboard_fast.py so as not to confuse
-# readers in early chapters.
 class MoveAge:
     def __init__(self, board):
         self.move_ages = - np.ones((board.num_rows, board.num_cols))

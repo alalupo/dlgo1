@@ -3,7 +3,7 @@ import h5py
 import logging
 
 __all__ = [
-    'EpExperienceCollector',
+    'EpisodeExperienceCollector',
     'ExperienceCollector',
     'ExperienceBuffer',
     'combine_experience',
@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-class EpExperienceCollector(object):
+class EpisodeExperienceCollector(object):
     def __init__(self, h5file):
         self.str_h5file = h5file
         self._current_episode_states = []

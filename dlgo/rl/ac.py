@@ -1,12 +1,14 @@
+import gc
 import numpy as np
-
+import tensorflow as tf
 from keras.optimizers import SGD
 
-from .. import encoders
-from .. import goboard
-from .. import kerasutil
-from ..agent import Agent
-from ..agent.helpers import is_point_an_eye
+from dlgo import goboard
+from dlgo import kerasutil
+from dlgo.agent.base import Agent
+from dlgo.agent.helpers import is_point_an_eye
+from dlgo.encoders.base import get_encoder_by_name
+from dlgo.encoders.base import get_encoder_by_name
 
 __all__ = [
     'ACAgent',
@@ -16,11 +18,11 @@ __all__ = [
 
 class ACAgent(Agent):
     def __init__(self, model, encoder):
+        super().__init__()
         self.model = model
         self.encoder = encoder
         self.collector = None
         self.temperature = 1.0
-
         self.last_state_value = 0
 
     def set_temperature(self, temperature):
@@ -54,10 +56,9 @@ class ACAgent(Agent):
             candidates, num_moves, replace=False, p=move_probs)
         for point_idx in ranked_moves:
             point = self.encoder.decode_point_index(point_idx)
-            if game_state.is_valid_move(goboard.Move.play(point)) and \
-                    not is_point_an_eye(game_state.board,
-                                        point,
-                                        game_state.next_player):
+            if not game_state.is_valid_move(goboard.Move.play(point)):
+                continue
+            if not is_point_an_eye(game_state.board, point, game_state.next_player):
                 if self.collector is not None:
                     self.collector.record_decision(
                         state=board_tensor,
@@ -109,7 +110,7 @@ def load_ac_agent(h5file):
         encoder_name = encoder_name.decode('ascii')
     board_width = h5file['encoder'].attrs['board_width']
     board_height = h5file['encoder'].attrs['board_height']
-    encoder = encoders.get_encoder_by_name(
+    encoder = get_encoder_by_name(
         encoder_name,
         (board_width, board_height))
     return ACAgent(model, encoder)

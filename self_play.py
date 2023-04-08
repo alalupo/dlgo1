@@ -1,10 +1,9 @@
 import argparse
+import logging.config
 import os
-import logging
 from collections import namedtuple
 
 import h5py
-import tensorflow as tf
 from keras.models import load_model
 
 from dlgo import rl
@@ -12,81 +11,60 @@ from dlgo import scoring
 from dlgo.agent.pg import PolicyAgent
 from dlgo.agent.pg import load_policy_agent
 from dlgo.encoders.simple import SimpleEncoder
-from dlgo.goboard_fast import GameState, Player, Point
+from dlgo.goboard_fast import GameState
+from dlgo.gotypes import Player
 from dlgo.tools.file_finder import FileFinder
+from dlgo.utils import print_board
 
-COLS = 'ABCDEFGHJKLMNOPQRST'
-STONE_TO_CHAR = {
-    None: '.',
-    Player.black: 'x',
-    Player.white: 'o',
-}
+logging.config.fileConfig('selfplay_logging.conf')
+logger = logging.getLogger('selfplayLogger')
 
 
-def avg(items):
-    if not items:
-        return 0.0
-    return sum(items) / float(len(items))
-
-
-def print_board(board):
-    for row in range(BOARD_SIZE, 0, -1):
-        line = []
-        for col in range(1, BOARD_SIZE + 1):
-            stone = board.get(Point(row=row, col=col))
-            line.append(STONE_TO_CHAR[stone])
-        print('%2d %s' % (row, ''.join(line)))
-    print('   ' + COLS[:BOARD_SIZE])
+# def avg(items):
+#     if not items:
+#         return 0.0
+#     return sum(items) / float(len(items))
 
 
 class GameRecord(namedtuple('GameRecord', 'moves winner margin')):
     pass
 
 
-def name(player):
-    if player == Player.black:
-        return 'B'
-    return 'W'
-
-
-def simulate_game(black_player, white_player):
-    moves = []
-    game = GameState.new_game(BOARD_SIZE)
-    agents = {
-        Player.black: black_player,
-        Player.white: white_player,
-    }
-    while not game.is_over():
-        next_move = agents[game.next_player].select_move(game)
-        moves.append(next_move)
-        game = game.apply_move(next_move)
-
-    print_board(game.board)
-    game_result = scoring.compute_game_result(game)
-    logging.info(game_result)
-
-    return GameRecord(
-        moves=moves,
-        winner=game_result.winner,
-        margin=game_result.winning_margin,
-    )
+# def name(player):
+#     if player == Player.black:
+#         return 'B'
+#     return 'W'
 
 
 def main():
-    logging.basicConfig(filename='self_play.log', format='%(levelname)s:%(message)s', level=logging.INFO)
-    logging.info('Started')
-    player = SelfPlayer()
+    logger.info('Started')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--board-size', '-bs', type=int, required=True)
+    parser.add_argument('--learning-agent', '-agent', required=True)
+    parser.add_argument('--num-games', '-n', type=int, default=10)
+
+    args = parser.parse_args()
+    board_size = args.board_size
+    agent = args.learning_agent
+    num_games = args.num_games
+
+    player = SelfPlayer(board_size, agent, num_games)
     player.play()
-    logging.info('Finished')
+    logger.info('Finished')
 
 
 class SelfPlayer:
-    def __init__(self):
-        self.rows, self.cols = 19, 19
+    def __init__(self, board_size, agent, num_games):
+        self.board_size = board_size
+        self.rows, self.cols = self.board_size, self.board_size
         self.encoder = SimpleEncoder((self.rows, self.cols))
-        self.model_name = 'model_simple_small_1000_20_epoch12_10proc.h5'
+        # TODO: agent czy model???
+        self.model_name = agent
+        self.num_games = num_games
         # SelfPlayer creates two copies of existing model, one for each agent,
-        # but it uses the same name and path for both copies
+        # but it uses the same name and path for both copies, overwriting the first copy for the second bot
+        # (see self.create_bot() method)
         self.model_copy_path = self.get_model_copy_path()
         self.exp_name = self.get_exp_name()
         self.exp_path = self.get_exp_path()
@@ -106,44 +84,30 @@ class SelfPlayer:
 
     def play(self):
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-        logging.info(f'>>>Starting self play of {self.model_name}')
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--num-games', '-n', type=int, default=10)
-        # parser.add_argument('--experience-out', '-e', required=True)
-
-        logging.info(f'Listing GPU devices:')
-        logging.info(tf.config.list_physical_devices('GPU'))
-
-        args = parser.parse_args()
-        num_games = args.num_games
-        # experience_filename = args.experience_out
-
-        global BOARD_SIZE
-        BOARD_SIZE = 19
-
+        logger.info(f'>>>Creating two bots from {self.model_name}')
         agent1 = self.create_bot(1)
         agent2 = self.create_bot(2)
-        collector1 = rl.EpExperienceCollector(self.exp_path)
-        collector2 = rl.EpExperienceCollector(self.exp_path)
+        collector1 = rl.EpisodeExperienceCollector(self.exp_path)
+        collector2 = rl.EpisodeExperienceCollector(self.exp_path)
         agent1.set_collector(collector1)
         agent2.set_collector(collector2)
 
-        for i in range(num_games):
-            logging.info('Simulating game %d/%d...' % (i + 1, num_games))
+        for i in range(self.num_games):
+            logger.info('Simulating game %d/%d...' % (i + 1, self.num_games))
             collector1.begin_episode()
             collector2.begin_episode()
-            game_record = simulate_game(agent1, agent2)
-            logging.info(f'>>>Completing episodes...')
+            game_record = self.simulate_game(agent1, agent2, self.board_size)
+            print(f'>>>Completing episodes...')
             if game_record.winner == Player.black:
                 collector1.complete_episode(reward=1)
                 collector2.complete_episode(reward=-1)
             else:
                 collector2.complete_episode(reward=1)
                 collector1.complete_episode(reward=-1)
-        logging.info(f'>>> Done')
+        logger.info(f'>>> Done')
 
     def create_bot(self, number):
-        logging.info(f'>>>Creating bot {number}...')
+        logger.info(f'>>>Creating bot {number}...')
         model = self.get_model()
         # print(model.summary())
         bot = PolicyAgent(model, self.encoder)
@@ -167,6 +131,45 @@ class SelfPlayer:
     def get_model_copy(self):
         finder = FileFinder()
         return finder.copy_model_and_get_path(self.model_name)
+
+    @staticmethod
+    def simulate_game(black_player, white_player, board_size):
+        moves = []
+        game = GameState.new_game(board_size)
+        agents = {
+            Player.black: black_player,
+            Player.white: white_player,
+        }
+        while not game.is_over():
+            next_move = agents[game.next_player].select_move(game)
+            moves.append(next_move)
+            game = game.apply_move(next_move)
+
+        print_board(game.board)
+        game_result = scoring.compute_game_result(game)
+        logger.info(game_result)
+
+        return GameRecord(
+            moves=moves,
+            winner=game_result.winner,
+            margin=game_result.winning_margin,
+        )
+
+    # @staticmethod
+    # def print_board(board, board_size):
+    #     COLS = 'ABCDEFGHJKLMNOPQRST'
+    #     STONE_TO_CHAR = {
+    #         None: '.',
+    #         Player.black: 'x',
+    #         Player.white: 'o',
+    #     }
+    #     for row in range(board_size, 0, -1):
+    #         line = []
+    #         for col in range(1, board_size + 1):
+    #             stone = board.get(Point(row=row, col=col))
+    #             line.append(STONE_TO_CHAR[stone])
+    #         print('%2d %s' % (row, ''.join(line)))
+    #     print('   ' + COLS[:board_size])
 
 
 if __name__ == '__main__':
