@@ -119,7 +119,7 @@ class GoDataProcessor:
             current_labels, labels = labels[:chunksize], labels[chunksize:]
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
-        logger.info(f'=== Zip processing done. ===')
+        print(f'=== Zip processing done. ===')
 
     def consolidate_games(self, name, samples):
         files_needed = set(file_name for file_name, index in samples)
@@ -202,10 +202,7 @@ class GoDataProcessor:
         # p = pool.map_async(worker, zips_to_process)
         # try:
         #     _ = p.get()
-        #     logger.info(f'The result of p.get is:')
-        #     logger.info(f'{_}')
         # except KeyboardInterrupt:  # Caught keyboard interrupt, terminating workers
-        #     logger.warning(f'Keyboard interrupt')
         #     pool.terminate()
         #     pool.join()
         #     sys.exit(-1)

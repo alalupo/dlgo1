@@ -44,8 +44,8 @@ def main():
     encoder = SimpleEncoder((rows, cols))
     input_shape = (rows, cols, encoder.num_planes)
     network = network_types.SmallNetwork(input_shape)
-    num_games = 100
-    epochs = 2
+    num_games = 20000
+    epochs = 20
     logger.info(f'GAMES: {num_games}')
     logger.info(f'EPOCHS: {epochs}')
     K.clear_session()
@@ -74,7 +74,7 @@ class Trainer:
             model.add(layer)
         model.add(Dense(self.num_classes, activation='softmax'))
         print(f'*' * 80)
-        logger.info(f'Model summary:')
+        print(f'Model summary:')
         logger.info(model.summary())
         print(f'*' * 80)
         return model
@@ -83,19 +83,19 @@ class Trainer:
         K.clear_session()
         processor = GoDataProcessor(encoder=self.encoder.name())
         generator = processor.load_go_data('train', num_samples=self.num_games, use_generator=True)
-        logger.info(f'>>>Train generator loaded')
+        print(f'>>>Train generator loaded')
         test_generator = processor.load_go_data('test', num_samples=self.num_games, use_generator=True)
-        logger.info(f'>>>Test generator loaded')
+        print(f'>>>Test generator loaded')
         checkpoint_dir = locate_directory()
         encoder_name = self.encoder.name()
         network_name = self.network.name
 
-        logger.info(f'>>>Model compiling...')
+        print(f'>>>Model compiling...')
         self.model.compile(optimizer=self.optimizer,
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
-        logger.info(f'>>>Model fitting...')
+        print(f'>>>Model fitting...')
         history = self.model.fit(
             generator.generate(batch_size, self.num_classes),
             epochs=self.epochs,
@@ -109,7 +109,7 @@ class Trainer:
                                 )
             ])
 
-        logger.info(f'>>>Model evaluating...')
+        print(f'>>>Model evaluating...')
         score = self.model.evaluate(
             test_generator.generate(batch_size, self.num_classes),
             steps=test_generator.get_num_samples() / batch_size)
