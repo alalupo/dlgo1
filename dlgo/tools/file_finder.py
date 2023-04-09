@@ -5,8 +5,11 @@ import shutil
 
 class FileFinder:
     def __init__(self):
-        self.model_dir = Path.cwd() / 'checkpoints'
-        self.exp_dir = Path.cwd() / 'exp'
+        self.project_path = Path.cwd()
+        self.model_dir = self.project_path / 'checkpoints'
+        self.exp_dir = self.project_path / 'exp'
+        self.data_dir = self.project_path / 'data'
+        self.dlgo_dir = self.project_path / 'dlgo'
 
     def find_model(self, model_name):
         full_path = self.get_model_full_path(model_name)

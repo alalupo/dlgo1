@@ -5,7 +5,6 @@ from dlgo.scoring import compute_game_result
 
 
 class TerminationStrategy:
-
     def __init__(self):
         pass
 
@@ -17,14 +16,12 @@ class TerminationStrategy:
 
 
 class PassWhenOpponentPasses(TerminationStrategy):
-
     def should_pass(self, game_state):
         if game_state.last_move is not None:
             return True if game_state.last_move.is_pass else False
 
 
 class ResignLargeMargin(TerminationStrategy):
-
     def __init__(self, own_color, cut_off_move, margin):
         super().__init__()
         self.own_color = own_color
@@ -47,7 +44,6 @@ class ResignLargeMargin(TerminationStrategy):
 
 
 class TerminationAgent(Agent):
-
     def __init__(self, agent, strategy=None):
         super().__init__()
         self.agent = agent

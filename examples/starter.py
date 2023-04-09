@@ -1,62 +1,82 @@
-import h5py
+import argparse
 import os
 import shutil
 from pathlib import Path
-
+import h5py
 from keras.models import load_model
 
-
 from dlgo.agent.predict import DeepLearningAgent, load_prediction_agent
-from dlgo.agent.termination import TerminationAgent, PassWhenOpponentPasses
+from dlgo.agent.termination import TerminationAgent, PassWhenOpponentPasses, ResignLargeMargin
 from dlgo.encoders.simple import SimpleEncoder
+from dlgo.gotypes import Player
 from dlgo.httpfrontend import get_web_app
+from dlgo.tools.file_finder import FileFinder
 
 
 def main():
-    go_board_rows, go_board_cols = 19, 19
-    encoder = SimpleEncoder((go_board_rows, go_board_cols))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--board-size', '-size', type=int, default=19, required=False)
+    parser.add_argument('--model', '-m', required=True)
+    args = parser.parse_args()
+    board_size = args.board_size
+    filename = args.model
+    starter = Starter(filename, board_size)
+    starter.start()
+    # starter.extract()
 
-    path = Path(__file__)
-    project_lvl_path = path.parents[1]
 
-    model_directory_name = 'checkpoints'
-    data_directory = project_lvl_path.joinpath(model_directory_name)
-    filename = 'simple_medium_model_epoch_2.h5'
-    new_filename = 'new_' + filename
-    model_path = str(data_directory.joinpath(filename))
-    new_model_path = str(data_directory.joinpath(new_filename))
-    if os.path.exists(model_path):
-        print(f"{model_path} exists.")
-    else:
-        raise FileNotFoundError
+class Starter:
+    def __init__(self, model_filename, board_size):
+        self.encoder = SimpleEncoder((board_size, board_size))
+        finder = FileFinder()
+        self.model_dir = finder.model_dir
+        self.model_name = model_filename
+        self.model_copy_name = 'copy_' + self.model_name
+        self.model_path = self.get_model_path()
 
-    shutil.copy(model_path, new_model_path)
-    model_path = new_model_path
+    def get_model_path(self):
+        path = Path(__file__)
+        project_lvl_path = path.parents[1]
+        model_dir_full_path = project_lvl_path.joinpath(self.model_dir)
+        model_path = str(model_dir_full_path.joinpath(self.model_name))
+        model_copy_path = str(model_dir_full_path.joinpath(self.model_copy_name))
+        if not os.path.exists(model_path):
+            raise FileNotFoundError
+        shutil.copy(model_path, model_copy_path)
+        model_path = model_copy_path
+        return model_path
 
-    model_file = None
-    try:
-        model_file = open(model_path, 'r')
-    finally:
-        model_file.close()
+    def get_model(self):
+        model_file = None
+        try:
+            model_file = open(self.model_path, 'r')
+        finally:
+            model_file.close()
+        with h5py.File(self.model_path, "r") as model_file:
+            model = load_model(model_file)
+        return model
 
-    # load h5py and create model
-    with h5py.File(model_path, "r") as model_file:
-        print(f'Items: {model_file.items()}')
-        print(f'Keys: {model_file.keys()}')
-        model = load_model(model_file)
-        config = model.get_config()
-        print(f'Printing h5py config: {config}')
-        print(model.summary())
-        deep_learning_bot = DeepLearningAgent(model, encoder)
+    def create_bot(self):
+        model = self.get_model()
+        deep_learning_bot = DeepLearningAgent(model, self.encoder)
+        with h5py.File(self.model_path, "w") as model_file:
+            deep_learning_bot.serialize(model_file)
+        with h5py.File(self.model_path, "r") as model_file:
+            bot_from_file = load_prediction_agent(model_file)
+            return TerminationAgent(bot_from_file, strategy=PassWhenOpponentPasses())
+            # return TerminationAgent(bot_from_file, strategy=ResignLargeMargin(own_color=Player.white, cut_off_move=None, margin=100))
 
-    with h5py.File(model_path, "w") as model_file:
-        deep_learning_bot.serialize(model_file)
-
-    with h5py.File(model_path, "r") as model_file:
-        bot_from_file = load_prediction_agent(model_file)
-        termination_bot = TerminationAgent(bot_from_file, strategy=PassWhenOpponentPasses())
-        web_app = get_web_app({'predict': termination_bot})
+    def start(self):
+        bot = self.create_bot()
+        web_app = get_web_app({'predict': bot})
         web_app.run()
+
+    def extract(self):
+        model = self.get_model()
+        outputs = [layer.output for layer in model.layers]
+        for output in outputs:
+            print(output)
+        # print(f'output: {feature_layer.weights}')
 
 
 if __name__ == '__main__':

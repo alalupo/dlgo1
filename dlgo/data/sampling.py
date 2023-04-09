@@ -5,6 +5,7 @@ import os
 import random
 import logging
 from dlgo.data.index_processor import KGSIndex
+from dlgo.tools.file_finder import FileFinder
 from six.moves import range
 
 logger = logging.getLogger('trainingLogger')
@@ -13,12 +14,13 @@ logger = logging.getLogger('trainingLogger')
 class Sampler:
     """Sample training and test data from zipped sgf files such that test data is kept stable."""
 
-    def __init__(self, data_dir='data', num_test_games=100, cap_year=2014, seed=1337):
-        self.data_dir = data_dir
+    def __init__(self, num_test_games=100, cap_year=2014, seed=1337):
+        self.finder = FileFinder()
+        self.data_dir = self.finder.data_dir
         self.num_test_games = num_test_games
         self.test_games = []
         self.train_games = []
-        self.test_folder = 'test_samples.py'
+        self.test_folder = self.finder.project_path + '/test_samples.py'
         self.cap_year = cap_year
         random.seed(seed)
         self.compute_test_samples()

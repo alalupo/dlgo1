@@ -20,6 +20,7 @@ from dlgo.encoders.base import get_encoder_by_name
 from dlgo.goboard_fast import Board, GameState, Move
 from dlgo.gosgf import Sgf_game
 from dlgo.gotypes import Player, Point
+from dlgo.tools.file_finder import FileFinder
 
 logger = logging.getLogger('trainingLogger')
 
@@ -32,25 +33,27 @@ def worker(jobinfo):
         raise Exception('>>> Exiting child process.')
 
 
-def locate_data_directory():
-    path = Path(__file__)
-    project_lvl_path = path.parents[2]
-    data_directory_name = 'data'
-    data_directory = project_lvl_path.joinpath(data_directory_name)
-    return str(data_directory)
+# def locate_data_directory():
+#     path = Path(__file__)
+#     project_lvl_path = path.parents[2]
+#     data_directory_name = 'data'
+#     data_directory = project_lvl_path.joinpath(data_directory_name)
+#     return str(data_directory)
 
 
 class GoDataProcessor:
     def __init__(self, encoder='simple'):
         self.encoder_string = encoder
         self.encoder = get_encoder_by_name(encoder, 19)
-        self.data_dir = locate_data_directory()
+        finder = FileFinder()
+        self.data_dir = finder.data_dir
+        self.test_ratio = 5
 
     def load_go_data(self, data_type='train', num_samples=1000,
                      use_generator=False):
         index = KGSIndex(data_directory=self.data_dir)
         index.download_files()
-        sampler = Sampler(data_dir=self.data_dir)
+        sampler = Sampler(num_test_games=np.floor(num_samples/self.test_ratio))
         data = sampler.draw_data(data_type, num_samples)
         self.map_to_workers(data_type, data)  # <1>
         if use_generator:
