@@ -1,6 +1,7 @@
 from dlgo import goboard
 from dlgo.agent.base import Agent
 from dlgo import scoring
+from dlgo.scoring import compute_game_result
 
 
 class TerminationStrategy:
@@ -38,7 +39,8 @@ class ResignLargeMargin(TerminationStrategy):
     def should_resign(self, game_state):
         self.moves_played += 1
         if self.moves_played:
-            game_result = scoring.compute_game_result(self)
+            game_result = scoring.compute_game_result(game_state)
+            print(f'GAME RESULT: {game_state}')
             if game_result.winner != self.own_color and game_result.winning_margin >= self.margin:
                 return True
         return False
@@ -57,6 +59,8 @@ class TerminationAgent(Agent):
 
     def select_move(self, game_state):
         if self.strategy.should_pass(game_state):
+            print(f'SHOULD PASS STRATEGY FIRED OFF')
+            print(f'RESULT: {compute_game_result(game_state)}')
             return goboard.Move.pass_turn()
         elif self.strategy.should_resign(game_state):
             return goboard.Move.resign()

@@ -23,7 +23,6 @@ class DeepLearningAgent(Agent):
         num_moves = self.encoder.board_width * self.encoder.board_height
         board_tensor = self.encoder.encode(game_state)
         X = np.array([board_tensor])
-        print(f'{self.__class__}: X shape = {X.shape}')
         # move_probs = self.predict(game_state)
         move_probs = self.model.predict(X)[0]
         move_probs = move_probs ** 3
@@ -35,12 +34,11 @@ class DeepLearningAgent(Agent):
         for point_idx in ranked_moves:
             point = self.encoder.decode_point_index(point_idx)
             if not game_state.is_valid_move(goboard_fast.Move.play(point)):
+                # print(f'is {point} valid? => {game_state.is_valid_move(goboard_fast.Move.play(point))}')
                 continue
-            if game_state.is_valid_move(goboard_fast.Move.play(point)) and \
-                    not is_point_an_eye(game_state.board, point, game_state.next_player):
+            if not is_point_an_eye(game_state.board, point, game_state.next_player):
                 return goboard_fast.Move.play(point)
-            print(f'is {point} valid? => {game_state.is_valid_move(goboard_fast.Move.play(point))}')
-            print(f'is {point} an eye? => {is_point_an_eye(game_state.board, point, game_state.next_player)}')
+            # print(f'is {point} an eye? => {is_point_an_eye(game_state.board, point, game_state.next_player)}')
             return goboard_fast.Move.pass_turn()
         return goboard_fast.Move.pass_turn()
 

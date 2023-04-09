@@ -37,30 +37,33 @@ class GameRecord(namedtuple('GameRecord', 'moves winner margin')):
 
 
 def main():
-    logger.info('Started')
+    logger.info('SELF PLAY: Logging started')
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--board-size', '-bs', type=int, required=True)
-    parser.add_argument('--learning-agent', '-agent', required=True)
+    parser.add_argument('--learning-model', '-model', required=True)
     parser.add_argument('--num-games', '-n', type=int, default=10)
 
     args = parser.parse_args()
     board_size = args.board_size
-    agent = args.learning_agent
+    model = args.learning_model
     num_games = args.num_games
 
-    player = SelfPlayer(board_size, agent, num_games)
+    logger.info(f'MODEL NAME: {model}')
+    logger.info(f'GAMES: {num_games}')
+    logger.info(f'BOARD SIZE: {board_size}')
+
+    player = SelfPlayer(board_size, model, num_games)
     player.play()
-    logger.info('Finished')
+    logger.info('SELF PLAY: Logging finished')
 
 
 class SelfPlayer:
-    def __init__(self, board_size, agent, num_games):
+    def __init__(self, board_size, model, num_games):
         self.board_size = board_size
         self.rows, self.cols = self.board_size, self.board_size
         self.encoder = SimpleEncoder((self.rows, self.cols))
-        # TODO: agent czy model???
-        self.model_name = agent
+        self.model_name = model
         self.num_games = num_games
         # SelfPlayer creates two copies of existing model, one for each agent,
         # but it uses the same name and path for both copies, overwriting the first copy for the second bot
@@ -68,6 +71,8 @@ class SelfPlayer:
         self.model_copy_path = self.get_model_copy_path()
         self.exp_name = self.get_exp_name()
         self.exp_path = self.get_exp_path()
+        logger.info(f'=== NEW SelfPlay OBJECT CREATED ===')
+        logger.info(f'ENCODER: {self.encoder.name()}')
 
     def get_model_copy_path(self):
         finder = FileFinder()
@@ -84,7 +89,7 @@ class SelfPlayer:
 
     def play(self):
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-        logger.info(f'>>>Creating two bots from {self.model_name}')
+        print(f'>>>Creating two bots from {self.model_name}')
         agent1 = self.create_bot(1)
         agent2 = self.create_bot(2)
         collector1 = rl.EpisodeExperienceCollector(self.exp_path)
@@ -93,7 +98,7 @@ class SelfPlayer:
         agent2.set_collector(collector2)
 
         for i in range(self.num_games):
-            logger.info('Simulating game %d/%d...' % (i + 1, self.num_games))
+            print('Simulating game %d/%d...' % (i + 1, self.num_games))
             collector1.begin_episode()
             collector2.begin_episode()
             game_record = self.simulate_game(agent1, agent2, self.board_size)
@@ -104,10 +109,10 @@ class SelfPlayer:
             else:
                 collector2.complete_episode(reward=1)
                 collector1.complete_episode(reward=-1)
-        logger.info(f'>>> Done')
+        print(f'>>> Done')
 
     def create_bot(self, number):
-        logger.info(f'>>>Creating bot {number}...')
+        print(f'>>>Creating bot {number}...')
         model = self.get_model()
         # print(model.summary())
         bot = PolicyAgent(model, self.encoder)
