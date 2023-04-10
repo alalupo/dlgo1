@@ -21,14 +21,13 @@ class NpArrayMapper:
         mmapped_array = np.memmap(self.file_path, dtype=self.dtype, shape=self.shape, mode='w+')
         # fill the memmap array with zeros (to initialize it)
         for i in range(0, self.shape[0], self.chunk_size):
-            max_val = min(i * self.chunk_size, self.shape[0])
+            max_val = min(i, self.shape[0])
             if max_val == self.shape[0]:
-                chunk_0 = self.shape[0] - (i - 1) * self.chunk_size
+                chunk_0 = self.shape[0] - (i - self.chunk_size)
                 if len(self.shape) > 1:
                     chunked_shape = (chunk_0,) + self.shape[1:]
                 else:
                     chunked_shape = (chunk_0,)
-            # TODO: ValueError: negative dimensions are not allowed (for larger samples)
             chunk = np.zeros(chunked_shape)
             if len(self.shape) > 1:
                 mmapped_array[i:i + self.chunk_size, :] = chunk
