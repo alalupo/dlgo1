@@ -16,6 +16,7 @@ from keras.utils import to_categorical
 from dlgo.data.generator import DataGenerator
 from dlgo.data.index_processor import KGSIndex
 from dlgo.data.sampling import Sampler
+from dlgo.data.mmap_np import NpArrayMapper
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.goboard_fast import Board, GameState, Move
 from dlgo.gosgf import Sgf_game
@@ -47,15 +48,16 @@ class GoDataProcessor:
         self.encoder = get_encoder_by_name(encoder, 19)
         finder = FileFinder()
         self.data_dir = finder.data_dir
-        self.test_ratio = 5
+        self.test_ratio = 0.2
 
     def load_go_data(self, data_type='train', num_samples=1000,
                      use_generator=False):
         index = KGSIndex(data_directory=self.data_dir)
         index.download_files()
-        sampler = Sampler(num_test_games=np.floor(num_samples/self.test_ratio))
+        sampler = Sampler(num_test_games=np.floor(num_samples * self.test_ratio))
         data = sampler.draw_data(data_type, num_samples)
         self.map_to_workers(data_type, data)  # <1>
+        print(f'load data: generator')
         if use_generator:
             generator = DataGenerator(self.data_dir, data)
             return generator  # <2>
@@ -78,8 +80,17 @@ class GoDataProcessor:
         total_examples = self.num_total_examples(zip_file, game_list, name_list)
         shape = self.encoder.shape()
         feature_shape = np.insert(shape, 0, np.asarray([total_examples]))
-        features = np.zeros(feature_shape)
-        labels = np.zeros((total_examples,))
+        feature_shape = tuple(feature_shape)
+        print(f'FEATURE SHAPE = {feature_shape}')
+        feature_mapper = NpArrayMapper(
+            self.data_dir.joinpath('tmp_' + zip_file_name + '_features.npy'), feature_shape, np.float64)
+        feature_mapper.create_map()
+        # features = np.zeros(feature_shape)
+        # print(f'DTYPE = {features.dtype}')
+        label_mapper = NpArrayMapper(
+            self.data_dir.joinpath('tmp_' + zip_file_name + '_labels.npy'), (total_examples,), np.float64)
+        label_mapper.create_map()
+        # labels = np.zeros((total_examples,))
 
         counter = 0
         for index in game_list:
@@ -102,8 +113,10 @@ class GoDataProcessor:
                     else:
                         move = Move.pass_turn()
                     if first_move_done and point is not None:
-                        features[counter] = self.encoder.encode(game_state)
-                        labels[counter] = self.encoder.encode_point(point)
+                        # features[counter] = self.encoder.encode(game_state)
+                        feature_mapper.write_to_map(counter, self.encoder.encode(game_state))
+                        # labels[counter] = self.encoder.encode_point(point)
+                        label_mapper.write_to_map(counter, self.encoder.encode_point(point))
                         counter += 1
                     game_state = game_state.apply_move(move)
                     first_move_done = True
@@ -112,16 +125,27 @@ class GoDataProcessor:
         label_file_base = self.data_dir.joinpath(data_file_name + '_labels_%d')
 
         chunk = 0  # Due to files with large content, split up after chunk-size
-        chunksize = 1024
-        logger.info(f'features with data size: {round(features.nbytes / 1000000, 2)} MB')
-        while features.shape[0] >= chunksize:
+        logger.info(f'Features size: {feature_mapper.get_size()} MB')
+        # while features.shape[0] >= chunksize:
+        #     feature_file = str(feature_file_base) % chunk
+        #     label_file = str(label_file_base) % chunk
+        #     chunk += 1
+        #     current_features, features = features[:chunksize], features[chunksize:]
+        #     current_labels, labels = labels[:chunksize], labels[chunksize:]
+        #     np.save(feature_file, current_features)
+        #     np.save(label_file, current_labels)
+
+        num_chunks = feature_mapper.num_chunks()
+        for i in range(num_chunks):
             feature_file = str(feature_file_base) % chunk
             label_file = str(label_file_base) % chunk
             chunk += 1
-            current_features, features = features[:chunksize], features[chunksize:]
-            current_labels, labels = labels[:chunksize], labels[chunksize:]
+            current_features = feature_mapper.get_chunk(i)
+            current_labels = label_mapper.get_chunk(i)
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
+        feature_mapper.clean_up()
+        label_mapper.clean_up()
         print(f'=== Zip processing done. ===')
 
     def consolidate_games(self, name, samples):

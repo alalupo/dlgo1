@@ -65,6 +65,7 @@ class SelfPlayer:
         self.encoder = SimpleEncoder((self.rows, self.cols))
         self.model_name = model
         self.num_games = num_games
+        self.prefix = 'selfplay_' + str(self.num_games) + '_'
         # SelfPlayer creates two copies of existing model, one for each agent,
         # but it uses the same name and path for both copies, overwriting the first copy for the second bot
         # (see self.create_bot() method)
@@ -76,7 +77,7 @@ class SelfPlayer:
 
     def get_model_copy_path(self):
         finder = FileFinder()
-        copy_name = finder.get_new_prefix_name_from_model(self.model_name, 'selfplay_' + self.num_games + '_')
+        copy_name = finder.get_new_prefix_name_from_model(self.model_name, self.prefix)
         return finder.get_model_full_path(copy_name)
 
     def get_exp_name(self):
@@ -135,7 +136,7 @@ class SelfPlayer:
 
     def get_model_copy(self):
         finder = FileFinder()
-        return finder.copy_model_and_get_path(self.model_name)
+        return finder.copy_model_and_get_path(self.model_name, self.prefix)
 
     @staticmethod
     def simulate_game(black_player, white_player, board_size):
