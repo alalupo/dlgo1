@@ -64,16 +64,16 @@ class GoDataProcessor:
             return features_and_labels  # <3>
 
     def unzip_data(self, zip_file_name):
-        this_gz = gzip.open(self.data_dir + '/' + zip_file_name)
+        this_gz = gzip.open(self.data_dir.joinpath(zip_file_name))
         tar_file = zip_file_name[0:-3]
-        this_tar = open(self.data_dir + '/' + tar_file, 'wb')
+        this_tar = open(self.data_dir.joinpath(tar_file), 'wb')
         shutil.copyfileobj(this_gz, this_tar)
         this_tar.close()
         return tar_file
 
     def process_zip(self, zip_file_name, data_file_name, game_list):
         tar_file = self.unzip_data(zip_file_name)
-        zip_file = tarfile.open(self.data_dir + '/' + tar_file)
+        zip_file = tarfile.open(self.data_dir.joinpath(tar_file))
         name_list = zip_file.getnames()
         total_examples = self.num_total_examples(zip_file, game_list, name_list)
         shape = self.encoder.shape()
@@ -108,15 +108,15 @@ class GoDataProcessor:
                     game_state = game_state.apply_move(move)
                     first_move_done = True
 
-        feature_file_base = self.data_dir + '/' + data_file_name + '_features_%d'
-        label_file_base = self.data_dir + '/' + data_file_name + '_labels_%d'
+        feature_file_base = self.data_dir.joinpath(data_file_name + '_features_%d')
+        label_file_base = self.data_dir.joinpath(data_file_name + '_labels_%d')
 
         chunk = 0  # Due to files with large content, split up after chunk-size
         chunksize = 1024
         logger.info(f'features with data size: {round(features.nbytes / 1000000, 2)} MB')
         while features.shape[0] >= chunksize:
-            feature_file = feature_file_base % chunk
-            label_file = label_file_base % chunk
+            feature_file = str(feature_file_base) % chunk
+            label_file = str(label_file_base) % chunk
             chunk += 1
             current_features, features = features[:chunksize], features[chunksize:]
             current_labels, labels = labels[:chunksize], labels[chunksize:]
@@ -135,7 +135,7 @@ class GoDataProcessor:
         label_list = []
         for file_name in file_names:
             file_prefix = file_name.replace('.tar.gz', '')
-            base = self.data_dir + '/' + file_prefix + '_features_*.npy'
+            base = self.data_dir.joinpath(file_prefix + '_features_*.npy')
             for feature_file in glob.glob(base):
                 label_file = feature_file.replace('features', 'labels')
                 x = np.load(feature_file)
@@ -148,8 +148,8 @@ class GoDataProcessor:
         features = np.concatenate(feature_list, axis=0)
         labels = np.concatenate(label_list, axis=0)
 
-        feature_file = self.data_dir + '/' + name
-        label_file = self.data_dir + '/' + name
+        feature_file = self.data_dir.joinpath(name)
+        label_file = self.data_dir.joinpath(name)
 
         np.save(feature_file, features)
         np.save(label_file, labels)
@@ -184,7 +184,7 @@ class GoDataProcessor:
         for zip_name in zip_names:
             base_name = zip_name.replace('.tar.gz', '')
             data_file_name = base_name + data_type
-            if not os.path.isfile(self.data_dir + '/' + data_file_name):
+            if not os.path.isfile(self.data_dir.joinpath(data_file_name)):
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
 

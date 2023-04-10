@@ -14,7 +14,7 @@ from dlgo.data.parallel_processor import GoDataProcessor
 from dlgo.encoders.simple import SimpleEncoder
 from dlgo.networks import network_types
 
-logging.config.fileConfig('train_logging.conf')
+logging.config.fileConfig('log_confs/train_logging.conf')
 logger = logging.getLogger('trainingLogger')
 
 
@@ -111,7 +111,7 @@ class Trainer:
         model.add(Dense(self.num_classes, activation='softmax'))
         print(f'*' * 80)
         print(f'Model summary:')
-        logger.info(model.summary())
+        model.summary()
         print(f'*' * 80)
         return model
 

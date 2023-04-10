@@ -20,14 +20,13 @@ class Sampler:
         self.num_test_games = num_test_games
         self.test_games = []
         self.train_games = []
-        self.test_folder = self.finder.project_path + '/test_samples.py'
+        self.test_folder = self.finder.project_path.joinpath('test_samples.py')
         self.cap_year = cap_year
         random.seed(seed)
         self.compute_test_samples()
         self.print_test_games()
 
     def print_test_games(self):
-        logger.info(f'>>>Checking test games in Sampler:')
         latest_year = 2000
         for test_game in self.test_games:
             filename = test_game[0]
@@ -115,7 +114,7 @@ class Sampler:
             num_games = fileinfo['num_games']
             for i in range(num_games):
                 available_games.append((filename, i))
-        logger.debug(f'Total num games: {len(available_games)}')
+        logger.debug(f'Total number of games: {len(available_games)}')
 
         sample_set = set()
         while len(sample_set) < num_sample_games:

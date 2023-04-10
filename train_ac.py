@@ -5,7 +5,7 @@ import logging.config
 from dlgo import agent
 from dlgo import rl
 
-logging.config.fileConfig('train_logging.conf')
+logging.config.fileConfig('log_confs/train_logging.conf')
 logger = logging.getLogger('trainingLogger')
 
 

@@ -16,7 +16,7 @@ from dlgo.gotypes import Player
 from dlgo.tools.file_finder import FileFinder
 from dlgo.utils import print_board
 
-logging.config.fileConfig('selfplay_logging.conf')
+logging.config.fileConfig('log_confs/selfplay_logging.conf')
 logger = logging.getLogger('selfplayLogger')
 
 
@@ -76,7 +76,7 @@ class SelfPlayer:
 
     def get_model_copy_path(self):
         finder = FileFinder()
-        copy_name = finder.get_new_prefix_name_from_model(self.model_name, 'copy_')
+        copy_name = finder.get_new_prefix_name_from_model(self.model_name, 'selfplay_' + self.num_games + '_')
         return finder.get_model_full_path(copy_name)
 
     def get_exp_name(self):

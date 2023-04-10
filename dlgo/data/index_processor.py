@@ -1,9 +1,8 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License,
 # v. 2.0. If a copy of the MPL was not distributed with this file, You can
 # obtain one at http://mozilla.org/MPL/2.0/.
-from __future__ import print_function
-from __future__ import absolute_import
 import os
+from pathlib import Path
 import sys
 import multiprocessing
 import six
@@ -52,8 +51,9 @@ class KGSIndex:
         for file_info in self.file_info:
             url = file_info['url']
             file_name = file_info['filename']
-            if not os.path.isfile(self.data_directory + '/' + file_name):
-                urls_to_download.append((url, self.data_directory + '/' + file_name))
+            file_path = self.data_directory.joinpath(file_name)
+            if not os.path.isfile(file_path):
+                urls_to_download.append((url, file_path))
         cores = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes=cores)
         try:

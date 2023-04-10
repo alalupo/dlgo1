@@ -31,13 +31,11 @@ class Starter:
         finder = FileFinder()
         self.model_dir = finder.model_dir
         self.model_name = model_filename
-        self.model_copy_name = 'copy_' + self.model_name
+        self.model_copy_name = 'play_' + self.model_name
         self.model_path = self.get_model_path()
 
     def get_model_path(self):
-        path = Path(__file__)
-        project_lvl_path = path.parents[1]
-        model_dir_full_path = project_lvl_path.joinpath(self.model_dir)
+        model_dir_full_path = self.model_dir
         model_path = str(model_dir_full_path.joinpath(self.model_name))
         model_copy_path = str(model_dir_full_path.joinpath(self.model_copy_name))
         if not os.path.exists(model_path):

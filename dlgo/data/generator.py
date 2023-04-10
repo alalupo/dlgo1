@@ -22,8 +22,8 @@ class DataGenerator:
     def _generate(self, batch_size, num_classes, data_type='train'):
         for zip_file_name in self.files:
             file_name = zip_file_name.replace('.tar.gz', '') + data_type
-            base = self.data_directory + '/' + file_name + '_features_*.npy'
-            for feature_file in glob.glob(base):
+            base = self.data_directory.joinpath(file_name + '_features_*.npy')
+            for feature_file in glob.glob(str(base)):
                 label_file = feature_file.replace('features', 'labels')
                 x = np.load(feature_file)
                 y = np.load(label_file)

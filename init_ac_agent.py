@@ -13,7 +13,7 @@ from dlgo.encoders.base import get_encoder_by_name
 from dlgo.networks import network_types
 from dlgo.networks.ac_network import AgentCriticNetwork
 
-logging.config.fileConfig('train_logging.conf')
+logging.config.fileConfig('log_confs/train_logging.conf')
 logger = logging.getLogger('trainingLogger')
 
 
