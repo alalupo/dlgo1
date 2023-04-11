@@ -21,18 +21,25 @@ class NpArrayMapper:
         mmapped_array = np.memmap(self.file_path, dtype=self.dtype, shape=self.shape, mode='w+')
         # fill the memmap array with zeros (to initialize it)
         for i in range(0, self.shape[0], self.chunk_size):
-            max_val = min(i, self.shape[0])
-            if max_val == self.shape[0]:
-                chunk_0 = self.shape[0] - (i - self.chunk_size)
+            if (i + self.chunk_size) > self.shape[0]:
+                chunk_0 = self.shape[0] - i
                 if len(self.shape) > 1:
                     chunked_shape = (chunk_0,) + self.shape[1:]
                 else:
                     chunked_shape = (chunk_0,)
             chunk = np.zeros(chunked_shape)
-            if len(self.shape) > 1:
-                mmapped_array[i:i + self.chunk_size, :] = chunk
+            if (i + self.chunk_size) > self.shape[0]:
+                if len(self.shape) > 1:
+                    # TODO: ValueError could not broadcast input shape from 1024 into 829
+                    mmapped_array[i:i + chunk_0, :] = chunk
+                else:
+                    mmapped_array[i:i + chunk_0] = chunk
             else:
-                mmapped_array[i:i + self.chunk_size] = chunk
+                if len(self.shape) > 1:
+                    # TODO: ValueError could not broadcast input shape from 1024 into 829
+                    mmapped_array[i:i + self.chunk_size, :] = chunk
+                else:
+                    mmapped_array[i:i + self.chunk_size] = chunk
         # get rid of the memory object now when the data is saved on the hard disk
         del mmapped_array
 
