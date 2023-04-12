@@ -91,26 +91,45 @@ class ACAgent(Agent):
             batch_size=batch_size,
             epochs=1)
 
+    # def serialize(self, h5file):
+    #     h5file.create_group('encoder')
+    #     h5file['encoder'].attrs['name'] = self.encoder.name()
+    #     h5file['encoder'].attrs['board_width'] = self.encoder.board_width
+    #     h5file['encoder'].attrs['board_height'] = self.encoder.board_height
+    #     h5file.create_group('model')
+    #     kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
+
+    def diagnostics(self):
+        return {'value': self.last_state_value}
+
     def serialize(self, h5file):
         h5file.create_group('encoder')
         h5file['encoder'].attrs['name'] = self.encoder.name()
         h5file['encoder'].attrs['board_width'] = self.encoder.board_width
         h5file['encoder'].attrs['board_height'] = self.encoder.board_height
         h5file.create_group('model')
-        kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
 
-    def diagnostics(self):
-        return {'value': self.last_state_value}
+        kerasutil.save_model_to_hdf5_group(self.model, h5file)
+
 
 
 def load_ac_agent(h5file):
-    model = kerasutil.load_model_from_hdf5_group(h5file['model'])
+    # model = kerasutil.load_model_from_hdf5_group(h5file['model'])
+    # encoder_name = h5file['encoder'].attrs['name']
+    # if not isinstance(encoder_name, str):
+    #     encoder_name = encoder_name.decode('ascii')
+    # board_width = h5file['encoder'].attrs['board_width']
+    # board_height = h5file['encoder'].attrs['board_height']
+    # encoder = get_encoder_by_name(
+    #     encoder_name,
+    #     (board_width, board_height))
+    model = kerasutil.load_model_from_hdf5_group(h5file)
     encoder_name = h5file['encoder'].attrs['name']
     if not isinstance(encoder_name, str):
         encoder_name = encoder_name.decode('ascii')
     board_width = h5file['encoder'].attrs['board_width']
     board_height = h5file['encoder'].attrs['board_height']
     encoder = get_encoder_by_name(
-        encoder_name,
-        (board_width, board_height))
+        encoder_name, (board_width, board_height))
     return ACAgent(model, encoder)
+

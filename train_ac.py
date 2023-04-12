@@ -2,11 +2,36 @@ import argparse
 import h5py
 import logging.config
 
+from keras.models import load_model
+
+from dlgo.encoders.simple import SimpleEncoder
 from dlgo import agent
 from dlgo import rl
 
 logging.config.fileConfig('log_confs/train_logging.conf')
 logger = logging.getLogger('trainingLogger')
+
+
+def get_model(model_path):
+    model_file = None
+    # make sure the model file is closed
+    try:
+        model_file = open(model_path, 'r')
+    finally:
+        model_file.close()
+    # load the model
+    with h5py.File(model_path, "r") as model_file:
+        model = load_model(model_file)
+    return model
+
+
+def create_bot(model_path, encoder):
+    model = get_model(model_path)
+    deep_learning_bot = rl.ACAgent(model, encoder)
+    with h5py.File(model_path, "w") as model_file:
+        deep_learning_bot.serialize(model_file)
+    with h5py.File(model_path, "r") as model_file:
+        return rl.load_ac_agent(model_file)
 
 
 def main():
@@ -29,8 +54,9 @@ def main():
     logger.info(f'Experience files: {experience_files}')
     logger.info(f'Updated agent filename: {updated_agent_filename}')
 
+    encoder = SimpleEncoder((19, 19))
     print(f'>>>LOADING AGENT')
-    learning_agent = rl.load_ac_agent(h5py.File(learning_agent_filename))
+    learning_agent = create_bot(learning_agent_filename, encoder)
 
     for exp_filename in experience_files:
         print(f'>>>LOADING EXPERIENCE: {exp_filename}')
