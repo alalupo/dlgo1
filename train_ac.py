@@ -27,36 +27,32 @@ def get_model(model_path):
 
 def create_bot(model_path, encoder):
     model = get_model(model_path)
-    deep_learning_bot = rl.ACAgent(model, encoder)
-    with h5py.File(model_path, "w") as model_file:
-        deep_learning_bot.serialize(model_file)
-    with h5py.File(model_path, "r") as model_file:
-        return rl.load_ac_agent(model_file)
+    return rl.ACAgent(model, encoder)
 
 
 def main():
     logger.info('TRAINER AC: STARTED')
     parser = argparse.ArgumentParser()
-    parser.add_argument('--learning-agent', required=True)
-    parser.add_argument('--agent-out', required=True)
+    parser.add_argument('--learning-model', '-model', required=True)
+    parser.add_argument('--model-out', '-out', required=True)
     parser.add_argument('--lr', type=float, default=0.0001)
     parser.add_argument('--bs', type=int, default=512)
     parser.add_argument('experience', nargs='+')
 
     args = parser.parse_args()
-    learning_agent_filename = args.learning_agent
+    learning_model_filename = args.learning_model
     experience_files = args.experience
-    updated_agent_filename = args.agent_out
+    updated_model_filename = args.model_out
     learning_rate = args.lr
     batch_size = args.bs
 
-    logger.info(f'Learning agent filename: {learning_agent_filename}')
+    logger.info(f'Learning agent filename: {learning_model_filename}')
     logger.info(f'Experience files: {experience_files}')
-    logger.info(f'Updated agent filename: {updated_agent_filename}')
+    logger.info(f'Updated agent filename: {updated_model_filename}')
 
     encoder = SimpleEncoder((19, 19))
     print(f'>>>LOADING AGENT')
-    learning_agent = create_bot(learning_agent_filename, encoder)
+    learning_agent = create_bot(learning_model_filename, encoder)
 
     for exp_filename in experience_files:
         print(f'>>>LOADING EXPERIENCE: {exp_filename}')
@@ -67,7 +63,7 @@ def main():
             lr=learning_rate,
             batch_size=batch_size)
     print(f'>>>Updated agent is getting serialized.')
-    with h5py.File(updated_agent_filename, 'w') as updated_agent_outf:
+    with h5py.File(updated_model_filename, 'w') as updated_agent_outf:
         learning_agent.serialize(updated_agent_outf)
 
     logger.info('TRAINER AC: FINISHED')

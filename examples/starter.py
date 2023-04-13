@@ -1,14 +1,14 @@
 import argparse
 import os
 import shutil
-from pathlib import Path
+
 import h5py
+import tensorflow as tf
 from keras.models import load_model
 
-from dlgo.agent.predict import DeepLearningAgent, load_prediction_agent
-from dlgo.agent.termination import TerminationAgent, PassWhenOpponentPasses, ResignLargeMargin
+from dlgo.agent.predict import DeepLearningAgent
+from dlgo.agent.termination import TerminationAgent, PassWhenOpponentPasses
 from dlgo.encoders.simple import SimpleEncoder
-from dlgo.gotypes import Player
 from dlgo.httpfrontend import get_web_app
 from dlgo.tools.file_finder import FileFinder
 
@@ -22,7 +22,6 @@ def main():
     filename = args.model
     starter = Starter(filename, board_size)
     starter.start()
-    # starter.extract()
 
 
 class Starter:
@@ -52,29 +51,20 @@ class Starter:
             model_file.close()
         with h5py.File(self.model_path, "r") as model_file:
             model = load_model(model_file)
+            model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+                          loss='categorical_crossentropy',
+                          metrics=['accuracy'])
         return model
 
     def create_bot(self):
         model = self.get_model()
         deep_learning_bot = DeepLearningAgent(model, self.encoder)
-        with h5py.File(self.model_path, "w") as model_file:
-            deep_learning_bot.serialize(model_file)
-        with h5py.File(self.model_path, "r") as model_file:
-            bot_from_file = load_prediction_agent(model_file)
-            return TerminationAgent(bot_from_file, strategy=PassWhenOpponentPasses())
-            # return TerminationAgent(bot_from_file, strategy=ResignLargeMargin(own_color=Player.white, cut_off_move=None, margin=100))
+        return TerminationAgent(deep_learning_bot, strategy=PassWhenOpponentPasses())
 
     def start(self):
         bot = self.create_bot()
         web_app = get_web_app({'predict': bot})
         web_app.run()
-
-    def extract(self):
-        model = self.get_model()
-        outputs = [layer.output for layer in model.layers]
-        for output in outputs:
-            print(output)
-        # print(f'output: {feature_layer.weights}')
 
 
 if __name__ == '__main__':

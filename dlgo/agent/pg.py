@@ -56,9 +56,8 @@ class PolicyAgent(Agent):
         num_moves = self._encoder.board_width * self._encoder.board_height
         board_tensor = self._encoder.encode(game_state)
         X = np.array([board_tensor])
-        # X shape for SimpleEncoder = (1, 11, 19, 19)
         # the conversion below due to: https://github.com/tensorflow/tensorflow/issues/44711#issuecomment-724439274
-        X = tf.convert_to_tensor(X)
+        # X = tf.convert_to_tensor(X)
         if np.random.random() < self._temperature:
             # Explore random moves.
             move_probs = np.ones(num_moves) / num_moves
@@ -67,7 +66,9 @@ class PolicyAgent(Agent):
             # move_probs = self._model.predict(X, verbose=0)[0]
             # the line above was changed due to:
             # https://github.com/tensorflow/tensorflow/issues/44711#issuecomment-1280844213
-            move_probs = self._model(X, training=False).numpy()[0]
+            # move_probs = self._model(X, training=False)[0]
+            # move_probs = np.array(move_probs)
+            move_probs = self._model.predict(X, verbose=0)[0][0]
             # memory leak counter:
             gc.collect()
             # move_probs shape = (361, )

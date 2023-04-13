@@ -36,9 +36,9 @@ class SimpleEncoder(Encoder):
                     if game_state.does_move_violate_ko(game_state.next_player,
                                                        Move.play(p)):
                         if self.channels_sequence == 'channels_last':
-                            board_tensor[r][c][10] = 1
+                            board_tensor[10] = 1
                         else:
-                            board_tensor[10][r][c] = 1
+                            board_tensor[10] = 1
                 else:
                     liberty_plane = min(4, go_string.num_liberties) - 1
                     if go_string.color == Player.white:
@@ -48,7 +48,7 @@ class SimpleEncoder(Encoder):
                     else:
                         board_tensor[liberty_plane][r][c] = 1
 
-        return board_tensor
+        return np.transpose(board_tensor, (1, 2, 0))
 
     def encode_point(self, point):
         """Turn a board point into an integer index."""
@@ -65,9 +65,6 @@ class SimpleEncoder(Encoder):
         return self.board_width * self.board_height
 
     def shape(self):
-        if self.channels_sequence == 'channels_last':
-            return self.board_height, self.board_width, self.num_planes
-        else:
             return self.num_planes, self.board_width, self.board_width
 
 

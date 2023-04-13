@@ -9,8 +9,7 @@ from keras.models import load_model
 from dlgo import rl
 from dlgo import scoring
 from dlgo.agent.pg import PolicyAgent
-from dlgo.agent.pg import load_policy_agent
-from dlgo.encoders.simple import SimpleEncoder
+from dlgo.encoders.base import get_encoder_by_name
 from dlgo.goboard_fast import GameState
 from dlgo.gotypes import Player
 from dlgo.tools.file_finder import FileFinder
@@ -20,20 +19,8 @@ logging.config.fileConfig('log_confs/selfplay_logging.conf')
 logger = logging.getLogger('selfplayLogger')
 
 
-# def avg(items):
-#     if not items:
-#         return 0.0
-#     return sum(items) / float(len(items))
-
-
 class GameRecord(namedtuple('GameRecord', 'moves winner margin')):
     pass
-
-
-# def name(player):
-#     if player == Player.black:
-#         return 'B'
-#     return 'W'
 
 
 def main():
@@ -62,23 +49,13 @@ class SelfPlayer:
     def __init__(self, board_size, model, num_games):
         self.board_size = board_size
         self.rows, self.cols = self.board_size, self.board_size
-        self.encoder = SimpleEncoder((self.rows, self.cols))
+        self.encoder = get_encoder_by_name('simple', self.board_size)
         self.model_name = model
         self.num_games = num_games
-        self.prefix = 'selfplay_' + str(self.num_games) + '_'
-        # SelfPlayer creates two copies of existing model, one for each agent,
-        # but it uses the same name and path for both copies, overwriting the first copy for the second bot
-        # (see self.create_bot() method)
-        self.model_copy_path = self.get_model_copy_path()
         self.exp_name = self.get_exp_name()
         self.exp_path = self.get_exp_path()
         logger.info(f'=== NEW SelfPlay OBJECT CREATED ===')
         logger.info(f'ENCODER: {self.encoder.name()}')
-
-    def get_model_copy_path(self):
-        finder = FileFinder()
-        copy_name = finder.get_new_prefix_name_from_model(self.model_name, self.prefix)
-        return finder.get_model_full_path(copy_name)
 
     def get_exp_name(self):
         finder = FileFinder()
@@ -115,28 +92,19 @@ class SelfPlayer:
     def create_bot(self, number):
         print(f'>>>Creating bot {number}...')
         model = self.get_model()
-        # print(model.summary())
-        bot = PolicyAgent(model, self.encoder)
-        with h5py.File(self.model_copy_path, "w") as model_file:
-            bot.serialize(model_file)
-        with h5py.File(self.model_copy_path, "r") as model_file:
-            bot_from_file = load_policy_agent(model_file)
-            return bot_from_file
+        return PolicyAgent(model, self.encoder)
 
     def get_model(self):
-        model_copy = self.get_model_copy()
+        finder = FileFinder()
+        path = finder.find_model(self.model_name)
         model_file = None
         try:
-            model_file = open(model_copy, 'r')
+            model_file = open(path, 'r')
         finally:
             model_file.close()
-        with h5py.File(model_copy, "r") as model_file:
+        with h5py.File(path, "r") as model_file:
             model = load_model(model_file)
         return model
-
-    def get_model_copy(self):
-        finder = FileFinder()
-        return finder.copy_model_and_get_path(self.model_name, self.prefix)
 
     @staticmethod
     def simulate_game(black_player, white_player, board_size):
@@ -160,22 +128,6 @@ class SelfPlayer:
             winner=game_result.winner,
             margin=game_result.winning_margin,
         )
-
-    # @staticmethod
-    # def print_board(board, board_size):
-    #     COLS = 'ABCDEFGHJKLMNOPQRST'
-    #     STONE_TO_CHAR = {
-    #         None: '.',
-    #         Player.black: 'x',
-    #         Player.white: 'o',
-    #     }
-    #     for row in range(board_size, 0, -1):
-    #         line = []
-    #         for col in range(1, board_size + 1):
-    #             stone = board.get(Point(row=row, col=col))
-    #             line.append(STONE_TO_CHAR[stone])
-    #         print('%2d %s' % (row, ''.join(line)))
-    #     print('   ' + COLS[:board_size])
 
 
 if __name__ == '__main__':

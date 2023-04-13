@@ -1,0 +1,13 @@
+python3 ./examples/starter.py --board-size 19 --model play_model_simple_small_200_400_epoch400_94proc.h5
+
+RL TRAINING PROCEDURE
+
+python3 init_ac_agent.py --board-size 9 ./checkpoints/ac_v1.h5
+
+python3 self_play.py --board-size 9 --learning-model ac_v1.h5 --num-games 10
+
+python3 train_ac.py -model ./checkpoints/selfplay_10_v1.h5 -out ./checkpoints/ac_v2.h5 ./exp/exp_ac_v1.h5
+
+python3 ./tools/eval_ac_bot.py --agent1 ./checkpoints/ac_v2.h5 --agent2 ./checkpoints/ac_v1.h5 --num-games 100
+
+
