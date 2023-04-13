@@ -58,7 +58,7 @@ class GoDataProcessor:
         zip_file = tarfile.open(self.data_dir + '/' + tar_file)
         name_list = zip_file.getnames()
         total_examples = self.num_total_examples(zip_file, game_list, name_list)
-        shape = self.encoder.shape()
+        shape = self.encoder.shape_for_others()
         feature_shape = np.insert(shape, 0, np.asarray([total_examples]))
         features = np.zeros(feature_shape)
         labels = np.zeros((total_examples,))

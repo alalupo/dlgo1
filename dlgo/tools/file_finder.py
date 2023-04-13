@@ -6,7 +6,7 @@ import shutil
 class FileFinder:
     def __init__(self):
         self.project_path = Path.cwd()
-        self.model_dir = self.project_path / 'checkpoints'
+        self.model_dir = self.project_path / 'models'
         self.exp_dir = self.project_path / 'exp'
         self.data_dir = self.project_path / 'data'
         self.dlgo_dir = self.project_path / 'dlgo'

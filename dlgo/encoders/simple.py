@@ -44,9 +44,9 @@ class SimpleEncoder(Encoder):
                     if go_string.color == Player.white:
                         liberty_plane += 4
                     if self.channels_sequence == 'channels_last':
-                        board_tensor[r][c][liberty_plane] = 1
+                        board_tensor[liberty_plane] = 1
                     else:
-                        board_tensor[liberty_plane][r][c] = 1
+                        board_tensor[liberty_plane] = 1
 
         return np.transpose(board_tensor, (1, 2, 0))
 
@@ -65,9 +65,12 @@ class SimpleEncoder(Encoder):
         return self.board_width * self.board_height
 
     def shape(self):
-            return self.num_planes, self.board_width, self.board_width
+        return self.num_planes, self.board_width, self.board_height
+
+    def shape_for_others(self):
+        # to adjust to channels_last tensorflow format
+        return self.board_width, self.board_height, self.num_planes
 
 
 def create(board_size):
     return SimpleEncoder(board_size)
-

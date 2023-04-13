@@ -5,7 +5,7 @@ from keras.layers import ZeroPadding2D
 class AgentCriticNetwork:
     def __init__(self, encoder):
         self.encoder = encoder
-        self.board_input = Input(shape=encoder.shape(), name='board_input')
+        self.board_input = Input(shape=encoder.shape_for_others(), name='board_input')
         self.policy_output, self.value_output = self.define_layers()
 
     def define_layers(self):

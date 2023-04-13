@@ -9,7 +9,7 @@ import h5py
 
 class GtpRunner:
     def __init__(self):
-        self.model_dir = 'checkpoints'
+        self.model_dir = 'models'
         self.model_name = 'copy_simple_medium_model_epoch_3.h5'
         self.model_path = self.get_model_path()
 

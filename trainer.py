@@ -21,7 +21,7 @@ logger = logging.getLogger('trainingLogger')
 def locate_directory():
     path = Path(__file__)
     project_lvl_path = path.parent
-    model_directory_name = 'checkpoints'
+    model_directory_name = 'models'
     data_directory = project_lvl_path.joinpath(model_directory_name)
     if not os.path.exists(data_directory):
         raise FileNotFoundError
@@ -99,7 +99,8 @@ class Trainer:
         self.loss = loss
         self.num_games = num_games
         self.epochs = num_epochs
-        self.go_board_rows, self.go_board_cols = board_size, board_size
+        self.board_size = board_size
+        self.go_board_rows, self.go_board_cols = self.board_size, self.board_size
         self.num_classes = self.go_board_rows * self.go_board_cols
         self.model = self.build_model()
 
@@ -116,7 +117,7 @@ class Trainer:
         return model
 
     def get_training_dataset(self):
-        processor = GoDataProcessor(encoder=self.encoder.name())
+        processor = GoDataProcessor(encoder=self.encoder.name(), board_size=self.board_size)
         train_generator = processor.load_go_data('train', num_samples=self.num_games, use_generator=True)
         print(f'>>>Train generator loaded')
         test_generator = processor.load_go_data('test', num_samples=self.num_games, use_generator=True)
@@ -126,7 +127,7 @@ class Trainer:
     def train_model(self, batch_size=128):
         K.clear_session()
         train_generator, test_generator = self.get_training_dataset()
-        checkpoint_dir = locate_directory()
+        model_dir = locate_directory()
         encoder_name = self.encoder.name()
         network_name = self.network.name
         print(f'>>>Model compiling...')
@@ -134,7 +135,7 @@ class Trainer:
                            loss=self.loss,
                            metrics=['accuracy'])
         print(f'>>>Model fitting...')
-        callback = ModelCheckpoint(checkpoint_dir + '/model_' + encoder_name + '_' + network_name + '_epoch_{epoch}.h5',
+        callback = ModelCheckpoint(model_dir + '/model_' + encoder_name + '_' + network_name + '_epoch_{epoch}.h5',
                                    save_weights_only=False,
                                    save_best_only=True)
         history = self.model.fit(
@@ -151,9 +152,9 @@ class Trainer:
         print(f'*' * 80)
         logger.info(f'Test loss: {score[0]}')
         logger.info(f'Test accuracy: {score[1]}')
-        self.save_plots(history, checkpoint_dir, encoder_name, network_name)
+        self.save_plots(history, model_dir, encoder_name, network_name)
 
-    def save_plots(self, history, checkpoint_dir, encoder_name, network_name):
+    def save_plots(self, history, model_dir, encoder_name, network_name):
         loss = history.history['loss']
         val_loss = history.history['val_loss']
         epochs = range(1, len(loss) + 1)
@@ -163,7 +164,7 @@ class Trainer:
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.legend()
-        plt.savefig(f'{checkpoint_dir}/graph_{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_loss.png')
+        plt.savefig(f'{model_dir}/graph_{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_loss.png')
 
         plt.clf()
 
@@ -175,7 +176,7 @@ class Trainer:
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')
         plt.legend()
-        plt.savefig(f'{checkpoint_dir}/graph_{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_accuracy.png')
+        plt.savefig(f'{model_dir}/graph_{encoder_name}_{network_name}_{self.num_games}_{self.epochs}_accuracy.png')
 
     def continue_training(self, batch_size, filename):
         K.clear_session()
@@ -183,17 +184,17 @@ class Trainer:
         # create a new model with the same architecture as the previous model
         new_model = Sequential()
         # Define the ModelCheckpoint callback to save the best model during training
-        checkpoint_dir = locate_directory()
+        model_dir = locate_directory()
         new_filename = 'final_' + filename
-        checkpoint_path = checkpoint_dir + filename
+        model_path = model_dir + filename
         encoder_name = self.encoder.name()
         network_name = self.network.name
         train_generator, test_generator = self.get_training_dataset()
-        checkpoint_callback = ModelCheckpoint(filepath=checkpoint_path,
+        checkpoint_callback = ModelCheckpoint(filepath=model_path,
                                               save_weights_only=False,
                                               save_best_only=True)
         # Load the weights from the saved checkpoint
-        new_model.load_weights(checkpoint_path)
+        new_model.load_weights(model_path)
 
         # Compile the new model with the same optimizer, loss, and metrics as the previous model
         new_model.compile(optimizer=self.optimizer, loss=self.loss, metrics=['accuracy'])
@@ -215,7 +216,7 @@ class Trainer:
         print(f'*' * 80)
         logger.info(f'Test loss: {score[0]}')
         logger.info(f'Test accuracy: {score[1]}')
-        self.save_plots(history, checkpoint_dir, encoder_name, network_name)
+        self.save_plots(history, model_dir, encoder_name, network_name)
 
 
 if __name__ == '__main__':

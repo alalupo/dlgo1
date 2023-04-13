@@ -28,8 +28,8 @@ logger = logging.getLogger('trainingLogger')
 
 def worker(jobinfo):
     try:
-        clazz, encoder, zip_file, data_file_name, game_list = jobinfo
-        clazz(encoder=encoder).process_zip(zip_file, data_file_name, game_list)
+        clazz, encoder, zip_file, data_file_name, game_list, board_size = jobinfo
+        clazz(encoder=encoder, board_size=board_size).process_zip(zip_file, data_file_name, game_list)
     except (KeyboardInterrupt, SystemExit):
         raise Exception('>>> Exiting child process.')
 
@@ -43,9 +43,10 @@ def worker(jobinfo):
 
 
 class GoDataProcessor:
-    def __init__(self, encoder='simple'):
+    def __init__(self, encoder='simple', board_size=19):
         self.encoder_string = encoder
-        self.encoder = get_encoder_by_name(encoder, 19)
+        self.board_size = board_size
+        self.encoder = get_encoder_by_name(encoder, self.board_size)
         finder = FileFinder()
         self.data_dir = finder.data_dir
         self.test_ratio = 0.2
@@ -74,23 +75,28 @@ class GoDataProcessor:
         return tar_file
 
     def process_zip(self, zip_file_name, data_file_name, game_list):
+        ram_limit = 50000
+        ram_limit_crossed = False
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir.joinpath(tar_file))
         name_list = zip_file.getnames()
         total_examples = self.num_total_examples(zip_file, game_list, name_list)
-        shape = self.encoder.shape()
+        shape = self.encoder.shape_for_others()
         feature_shape = np.insert(shape, 0, np.asarray([total_examples]))
         feature_shape = tuple(feature_shape)
         print(f'FEATURE SHAPE = {feature_shape}')
-        feature_mapper = NpArrayMapper(
-            self.data_dir.joinpath('tmp_' + zip_file_name + '_features.npy'), feature_shape, np.float64)
-        feature_mapper.create_map()
-        # features = np.zeros(feature_shape)
+        if total_examples > ram_limit:
+            ram_limit_crossed = True
+            feature_mapper = NpArrayMapper(
+                self.data_dir.joinpath('tmp_' + zip_file_name + '_features.npy'), feature_shape, np.float64)
+            feature_mapper.create_map()
+            label_mapper = NpArrayMapper(
+                self.data_dir.joinpath('tmp_' + zip_file_name + '_labels.npy'), (total_examples,), np.float64)
+            label_mapper.create_map()
+        else:
+            features = np.zeros(feature_shape)
+            labels = np.zeros((total_examples,))
         # print(f'DTYPE = {features.dtype}')
-        label_mapper = NpArrayMapper(
-            self.data_dir.joinpath('tmp_' + zip_file_name + '_labels.npy'), (total_examples,), np.float64)
-        label_mapper.create_map()
-        # labels = np.zeros((total_examples,))
 
         counter = 0
         for index in game_list:
@@ -113,10 +119,13 @@ class GoDataProcessor:
                     else:
                         move = Move.pass_turn()
                     if first_move_done and point is not None:
-                        # features[counter] = self.encoder.encode(game_state)
-                        feature_mapper.write_to_map(counter, self.encoder.encode(game_state))
-                        # labels[counter] = self.encoder.encode_point(point)
-                        label_mapper.write_to_map(counter, self.encoder.encode_point(point))
+                        if ram_limit_crossed:
+                            feature_mapper.write_to_map(counter, self.encoder.encode(game_state))
+                            label_mapper.write_to_map(counter, self.encoder.encode_point(point))
+                        else:
+                            features[counter] = self.encoder.encode(game_state)
+                            labels[counter] = self.encoder.encode_point(point)
+
                         counter += 1
                     game_state = game_state.apply_move(move)
                     first_move_done = True
@@ -125,27 +134,30 @@ class GoDataProcessor:
         label_file_base = self.data_dir.joinpath(data_file_name + '_labels_%d')
 
         chunk = 0  # Due to files with large content, split up after chunk-size
-        logger.info(f'Features size: {feature_mapper.get_size()} MB')
-        # while features.shape[0] >= chunksize:
-        #     feature_file = str(feature_file_base) % chunk
-        #     label_file = str(label_file_base) % chunk
-        #     chunk += 1
-        #     current_features, features = features[:chunksize], features[chunksize:]
-        #     current_labels, labels = labels[:chunksize], labels[chunksize:]
-        #     np.save(feature_file, current_features)
-        #     np.save(label_file, current_labels)
-
-        num_chunks = feature_mapper.num_chunks()
-        for i in range(num_chunks):
-            feature_file = str(feature_file_base) % chunk
-            label_file = str(label_file_base) % chunk
-            chunk += 1
-            current_features = feature_mapper.get_chunk(i)
-            current_labels = label_mapper.get_chunk(i)
-            np.save(feature_file, current_features)
-            np.save(label_file, current_labels)
-        feature_mapper.clean_up()
-        label_mapper.clean_up()
+        if ram_limit_crossed:
+            logger.info(f'Features size: {feature_mapper.get_size()} MB')
+            num_chunks = feature_mapper.num_chunks()
+            for i in range(num_chunks):
+                feature_file = str(feature_file_base) % chunk
+                label_file = str(label_file_base) % chunk
+                chunk += 1
+                current_features = feature_mapper.get_chunk(i)
+                current_labels = label_mapper.get_chunk(i)
+                np.save(feature_file, current_features)
+                np.save(label_file, current_labels)
+            feature_mapper.clean_up()
+            label_mapper.clean_up()
+        else:
+            logger.info(f'Features size: {round(features.nbytes / 1000000, 2)}')
+            chunksize = 1024
+            while features.shape[0] >= chunksize:
+                feature_file = str(feature_file_base) % chunk
+                label_file = str(label_file_base) % chunk
+                chunk += 1
+                current_features, features = features[:chunksize], features[chunksize:]
+                current_labels, labels = labels[:chunksize], labels[chunksize:]
+                np.save(feature_file, current_features)
+                np.save(label_file, current_labels)
         print(f'=== Zip processing done. ===')
 
     def consolidate_games(self, name, samples):
@@ -210,7 +222,7 @@ class GoDataProcessor:
             data_file_name = base_name + data_type
             if not os.path.isfile(self.data_dir.joinpath(data_file_name)):
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
-                                        data_file_name, indices_by_zip_name[zip_name]))
+                                        data_file_name, indices_by_zip_name[zip_name], self.board_size))
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
         pnum = 1 # By default pnum = cores but can be set to 1 if no multiprocessing needed
