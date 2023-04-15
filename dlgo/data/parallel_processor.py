@@ -26,8 +26,9 @@ logger = logging.getLogger('trainingLogger')
 
 def worker(jobinfo):
     try:
-        clazz, encoder, zip_file, data_file_name, game_list, board_size, data_type = jobinfo
-        clazz(encoder=encoder, board_size=board_size).process_zip(zip_file, data_file_name, game_list, data_type)
+        clazz, encoder, zip_file, data_file_name, game_list, board_size, data_type, num_samples = jobinfo
+        clazz(encoder=encoder, board_size=board_size).process_zip(
+            zip_file, data_file_name, game_list, data_type, num_samples)
     except (KeyboardInterrupt, SystemExit):
         raise Exception('>>> Exiting child process.')
 
@@ -47,10 +48,6 @@ class GoDataProcessor:
         self.test_ratio = 0.2
 
     def load_go_data(self, num_samples, data_type='train'):
-        if data_type == 'train':
-            GoDataProcessor.total_train_samples = num_samples
-        else:
-            GoDataProcessor.total_test_samples = num_samples
         index = KGSIndex(data_directory=self.data_dir)
         index.download_files()
         sampler = Sampler(num_test_games=np.floor(num_samples * self.test_ratio))
@@ -74,7 +71,8 @@ class GoDataProcessor:
             data_file_name = base_name + data_type
             if not os.path.isfile(self.data_dir.joinpath(data_file_name)):
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
-                                        data_file_name, indices_by_zip_name[zip_name], self.board_size, data_type))
+                                        data_file_name, indices_by_zip_name[zip_name], self.board_size,
+                                        data_type, num_samples))
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
         pnum = 1  # By default pnum = cores but can be set to 1 if no multiprocessing needed
@@ -90,7 +88,7 @@ class GoDataProcessor:
                 pool.join()
                 sys.exit(-1)
 
-    def process_zip(self, zip_file_name, data_file_name, game_list, data_type):
+    def process_zip(self, zip_file_name, data_file_name, game_list, data_type, num_samples):
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir.joinpath(tar_file))
         name_list = zip_file.getnames()
@@ -152,10 +150,13 @@ class GoDataProcessor:
                 np.save(feature_file, current_features)
                 np.save(label_file, current_labels)
             self.progressBar(game_list.index(index), len(game_list), 'games.')
+        print(f'')
         if data_type == 'train':
+            GoDataProcessor.total_train_samples = num_samples
             GoDataProcessor.processed_train_samples += len(game_list)
             logger.info(f'TOTAL PROGRESS: {GoDataProcessor.processed_train_samples}/{GoDataProcessor.total_train_samples}')
         else:
+            GoDataProcessor.total_test_samples = num_samples
             GoDataProcessor.processed_test_samples += len(game_list)
             logger.info(f'TOTAL PROGRESS: {GoDataProcessor.processed_test_samples}/{GoDataProcessor.total_test_samples}')
 
