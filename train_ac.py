@@ -6,7 +6,7 @@ from keras.models import load_model, save_model
 
 from dlgo import rl
 from dlgo.encoders.base import get_encoder_by_name
-from dlgo.exp.h5reader import ExpGenerator
+from dlgo.exp.exp_reader import ExpGenerator
 
 logging.config.fileConfig('log_confs/train_logging.conf')
 logger = logging.getLogger('trainingLogger')

@@ -17,16 +17,6 @@ logging.config.fileConfig('log_confs/train_logging.conf')
 logger = logging.getLogger('trainingLogger')
 
 
-def locate_directory():
-    path = Path(__file__)
-    project_lvl_path = path.parent
-    model_directory_name = 'models'
-    model_directory = project_lvl_path.joinpath(model_directory_name)
-    if not os.path.exists(model_directory):
-        raise FileNotFoundError
-    return str(model_directory)
-
-
 def show_intro():
     print(f'*' * 80)
     print(f'Don\'t forget to clean up data directory of npy files before you start training a new model.')
@@ -83,24 +73,35 @@ def main():
     logger.info(f'LOSS FUNCTION: {loss_function}')
     logger.info(f'BATCH SIZE: {batch_size}')
 
-    trainer = Trainer(network, encoder, optimizer, loss_function, num_games, epochs, board_size)
+    trainer = Trainer(network, encoder, num_games, epochs, optimizer, loss_function, board_size)
     first_training(trainer, batch_size)
     logger.info('TRAINER: FINISHED')
 
 
 class Trainer:
-    def __init__(self, network, encoder, optimizer, loss='categorical_crossentropy', num_games=100, num_epochs=5,
-                 board_size=19):
+    def __init__(self, network, encoder, num_games, num_epochs, optimizer,
+                 loss='categorical_crossentropy', board_size=19):
         self.network = network
         self.encoder = encoder
-        self.optimizer = optimizer
-        self.loss = loss
         self.num_games = num_games
         self.epochs = num_epochs
+        self.optimizer = optimizer
+        self.loss = loss
         self.board_size = board_size
         self.go_board_rows, self.go_board_cols = self.board_size, self.board_size
         self.num_classes = self.go_board_rows * self.go_board_cols
+        self.model_dir = self.get_model_directory()
         self.model = self.build_model()
+
+    @staticmethod
+    def get_model_directory():
+        path = Path(__file__)
+        project_lvl_path = path.parent
+        model_directory_name = 'models'
+        model_directory = project_lvl_path.joinpath(model_directory_name)
+        if not os.path.exists(model_directory):
+            raise FileNotFoundError
+        return str(model_directory)
 
     def build_model(self):
         model = Model(inputs=self.network.board_input,
@@ -111,18 +112,9 @@ class Trainer:
         print(f'*' * 80)
         return model
 
-    def get_training_dataset(self):
-        processor = GoDataProcessor(encoder=self.encoder.name(), board_size=self.board_size)
-        train_generator = processor.load_go_data('train', num_samples=self.num_games)
-        print(f'>>>Train generator loaded')
-        test_generator = processor.load_go_data('test', num_samples=self.num_games)
-        print(f'>>>Test generator loaded')
-        return train_generator, test_generator
-
     def train_model(self, batch_size=128):
         K.clear_session()
-        train_generator, test_generator = self.get_training_dataset()
-        model_dir = locate_directory()
+        train_generator, test_generator = self.get_datasets()
         encoder_name = self.encoder.name()
         network_name = self.network.name
         print(f'>>>Model compiling...')
@@ -130,24 +122,34 @@ class Trainer:
                            loss=self.loss,
                            metrics=['accuracy'])
         print(f'>>>Model fitting...')
-        callback = ModelCheckpoint(model_dir + '/model_' + encoder_name + '_' + network_name + '_epoch_{epoch}.h5',
+        callback = ModelCheckpoint(self.model_dir + '/model_' + encoder_name + '_' + network_name + '_epoch_{epoch}.h5',
                                    save_weights_only=False,
                                    save_best_only=True)
         history = self.model.fit(
             train_generator.generate(batch_size, self.num_classes),
             epochs=self.epochs,
-            steps_per_epoch=train_generator.get_num_samples() / batch_size,
+            steps_per_epoch=train_generator.get_num_samples(batch_size=batch_size,
+                                                            num_classes=self.num_classes) / batch_size,
             validation_data=test_generator.generate(batch_size, self.num_classes),
-            validation_steps=test_generator.get_num_samples() / batch_size,
+            validation_steps=test_generator.get_num_samples(batch_size=batch_size,
+                                                            num_classes=self.num_classes) / batch_size,
             callbacks=[callback])
         print(f'>>>Model evaluating...')
         score = self.model.evaluate(
             test_generator.generate(batch_size, self.num_classes),
-            steps=test_generator.get_num_samples() / batch_size)
+            steps=test_generator.get_num_samples(batch_size=batch_size, num_classes=self.num_classes) / batch_size)
         print(f'*' * 80)
         logger.info(f'Test loss: {score[0]}')
         logger.info(f'Test accuracy: {score[1]}')
-        self.save_plots(history, model_dir, encoder_name, network_name)
+        self.save_plots(history, self.model_dir, encoder_name, network_name)
+
+    def get_datasets(self):
+        processor = GoDataProcessor(encoder=self.encoder.name(), board_size=self.board_size)
+        train_generator = processor.load_go_data(num_samples=self.num_games, data_type='train')
+        print(f'>>>Train generator loaded')
+        test_generator = processor.load_go_data(num_samples=self.num_games, data_type='test')
+        print(f'>>>Test generator loaded')
+        return train_generator, test_generator
 
     def save_plots(self, history, model_dir, encoder_name, network_name):
         loss = history.history['loss']
@@ -179,12 +181,11 @@ class Trainer:
         # create a new model with the same architecture as the previous model
         new_model = Sequential()
         # Define the ModelCheckpoint callback to save the best model during training
-        model_dir = locate_directory()
         new_filename = 'final_' + filename
-        model_path = model_dir + filename
+        model_path = self.model_dir + filename
         encoder_name = self.encoder.name()
         network_name = self.network.name
-        train_generator, test_generator = self.get_training_dataset()
+        train_generator, test_generator = self.get_datasets()
         checkpoint_callback = ModelCheckpoint(filepath=model_path,
                                               save_weights_only=False,
                                               save_best_only=True)
@@ -197,9 +198,11 @@ class Trainer:
         # Train the new model with additional epochs
         history = new_model.fit(train_generator.generate(batch_size, self.num_classes),
                                 epochs=self.epochs,
-                                steps_per_epoch=train_generator.get_num_samples() / batch_size,
+                                steps_per_epoch=train_generator.get_num_samples(batch_size=batch_size,
+                                                                                num_classes=self.num_classes) / batch_size,
                                 validation_data=test_generator.generate(batch_size, self.num_classes),
-                                validation_steps=test_generator.get_num_samples() / batch_size,
+                                validation_steps=test_generator.get_num_samples(batch_size=batch_size,
+                                                                                num_classes=self.num_classes) / batch_size,
                                 callbacks=[checkpoint_callback])
 
         # Save the final model
@@ -207,11 +210,11 @@ class Trainer:
         print(f'>>>Model evaluating...')
         score = new_model.evaluate(
             test_generator.generate(batch_size, self.num_classes),
-            steps=test_generator.get_num_samples() / batch_size)
+            steps=test_generator.get_num_samples(batch_size=batch_size, num_classes=self.num_classes) / batch_size)
         print(f'*' * 80)
         logger.info(f'Test loss: {score[0]}')
         logger.info(f'Test accuracy: {score[1]}')
-        self.save_plots(history, model_dir, encoder_name, network_name)
+        self.save_plots(history, self.model_dir, encoder_name, network_name)
 
 
 if __name__ == '__main__':

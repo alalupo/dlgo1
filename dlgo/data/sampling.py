@@ -28,12 +28,26 @@ class Sampler:
 
     def print_test_games(self):
         latest_year = 2000
+        earliest_year = 2020
         for test_game in self.test_games:
             filename = test_game[0]
             year = int(filename.split('-')[1].split('_')[0])
             if year > latest_year:
                 latest_year = year
+            if year < earliest_year:
+                earliest_year = year
         logger.debug(f'The latest year in the test set: {latest_year}')
+        logger.debug(f'The earliest year in the test set: {earliest_year}')
+
+    def print_available_games(self):
+        """Draw num_sample_games many training games from index."""
+        available_games = 0
+        index = KGSIndex(data_directory=self.data_dir)
+
+        for fileinfo in index.file_info:
+            num_games = fileinfo['num_games']
+            available_games += num_games
+        logger.info(f'>>>Total number of KGS games: {available_games}')
 
     def draw_data(self, data_type, num_samples):
         if data_type == 'test':
@@ -45,7 +59,7 @@ class Sampler:
         else:
             raise ValueError(data_type + " is not a valid data type, choose from 'train' or 'test'")
 
-    def draw_samples(self, num_sample_games):
+    def draw_test_samples(self, num_sample_games):
         """Draw num_sample_games many training games from index."""
         available_games = []
         index = KGSIndex(data_directory=self.data_dir)
@@ -53,19 +67,19 @@ class Sampler:
         for fileinfo in index.file_info:
             filename = fileinfo['filename']
             year = int(filename.split('-')[1].split('_')[0])
-            if year > self.cap_year:
+            if year <= self.cap_year:
                 continue
             num_games = fileinfo['num_games']
             for i in range(num_games):
                 available_games.append((filename, i))
-        logger.info('>>>Total number of games used: ' + str(len(available_games)))
+        logger.debug(f'Total number of available test games: {len(available_games)}')
 
         sample_set = set()
         while len(sample_set) < num_sample_games:
             sample = random.choice(available_games)
             if sample not in sample_set:
                 sample_set.add(sample)
-        logger.debug(f'Drawn {str(num_sample_games)} samples')
+        logger.debug(f'Drawn {num_sample_games} test samples')
         return list(sample_set)
 
     def draw_training_games(self):
@@ -76,8 +90,7 @@ class Sampler:
         for file_info in index.file_info:
             filename = file_info['filename']
             year = int(filename.split('-')[1].split('_')[0])
-            # CHANGED !!!
-            if year <= self.cap_year:
+            if year > self.cap_year:
                 continue
             num_games = file_info['num_games']
             for i in range(num_games):
@@ -89,7 +102,7 @@ class Sampler:
     def compute_test_samples(self):
         """If not already existing, create local file to store fixed set of test samples"""
         if not os.path.isfile(self.test_folder):
-            test_games = self.draw_samples(self.num_test_games)
+            test_games = self.draw_test_samples(self.num_test_games)
             test_sample_file = open(self.test_folder, 'w')
             for sample in test_games:
                 test_sample_file.write(str(sample) + "\n")
@@ -110,20 +123,19 @@ class Sampler:
         for fileinfo in index.file_info:
             filename = fileinfo['filename']
             year = int(filename.split('-')[1].split('_')[0])
-            # CHANGED !!!
-            if year <= self.cap_year:
+            if year > self.cap_year:
                 continue
             num_games = fileinfo['num_games']
             for i in range(num_games):
                 available_games.append((filename, i))
-        logger.debug(f'Total number of games: {len(available_games)}')
+        logger.debug(f'Total number of available training games: {len(available_games)}')
 
         sample_set = set()
         while len(sample_set) < num_sample_games:
             sample = random.choice(available_games)
             if sample not in self.test_games:
                 sample_set.add(sample)
-        logger.debug(f'Drawn {num_sample_games} samples.')
+        logger.debug(f'Drawn {num_sample_games} training samples.')
         return list(sample_set)
 
     def draw_all_training(self):
@@ -134,8 +146,7 @@ class Sampler:
         for fileinfo in index.file_info:
             filename = fileinfo['filename']
             year = int(filename.split('-')[1].split('_')[0])
-            # CHANGED !!!
-            if year <= self.cap_year:
+            if year > self.cap_year:
                 continue
             if 'num_games' in fileinfo.keys():
                 num_games = fileinfo['num_games']

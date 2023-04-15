@@ -52,6 +52,11 @@ class NpArrayMapper:
         del my_array
         return size
 
+    def write_np_to_map(self, array):
+        it = np.nditer(array, flags=['f_index'])
+        for x in it:
+            print("%d <%d>" % (x, it.index), end=' ')
+
     def write_to_map(self, index, value):
         my_array = np.memmap(self.file_path, dtype=self.dtype, shape=self.shape, mode='r+')
         # calculate the starting index and offset of the chunk to write
