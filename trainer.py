@@ -3,12 +3,11 @@ import logging.config
 import os
 from pathlib import Path
 
+import keras.backend as K
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
-from keras.layers.core import Dense
 from keras.models import Model, Sequential
-import keras.backend as K
 
 from dlgo.data.parallel_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name
@@ -86,7 +85,6 @@ def main():
 
     trainer = Trainer(network, encoder, optimizer, loss_function, num_games, epochs, board_size)
     first_training(trainer, batch_size)
-    # next_training(trainer, batch_size)
     logger.info('TRAINER: FINISHED')
 
 

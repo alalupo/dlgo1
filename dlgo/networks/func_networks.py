@@ -54,8 +54,10 @@ class TrainerNetwork:
 
         conv4a = ZeroPadding2D((2, 2))(conv3d)
         conv4b = Conv2D(64, (3, 3), activation='relu')(conv4a)
+        conv4c = Activation('relu')(conv4b)
+        conv4d = Dropout(rate=0.1)(conv4c)
 
-        flat = Flatten()(conv4b)
+        flat = Flatten()(conv4d)
         processed_board = Dense(512)(flat)
 
         output = Dense(self.num_classes, activation='softmax')(processed_board)
