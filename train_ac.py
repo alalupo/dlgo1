@@ -1,12 +1,12 @@
 import argparse
-import h5py
 import logging.config
 
-from keras.models import load_model
+import h5py
+from keras.models import load_model, save_model
 
-from dlgo.encoders.simple import SimpleEncoder
-from dlgo import agent
 from dlgo import rl
+from dlgo.encoders.base import get_encoder_by_name
+from dlgo.exp.h5reader import ExpGenerator
 
 logging.config.fileConfig('log_confs/train_logging.conf')
 logger = logging.getLogger('trainingLogger')
@@ -33,6 +33,7 @@ def create_bot(model_path, encoder):
 def main():
     logger.info('TRAINER AC: STARTED')
     parser = argparse.ArgumentParser()
+    parser.add_argument('--board_size', '-size', type=int, default=19, required=False)
     parser.add_argument('--learning-model', '-model', required=True)
     parser.add_argument('--model-out', '-out', required=True)
     parser.add_argument('--lr', type=float, default=0.0001)
@@ -40,6 +41,7 @@ def main():
     parser.add_argument('experience', nargs='+')
 
     args = parser.parse_args()
+    board_size = args.board_size
     learning_model_filename = args.learning_model
     experience_files = args.experience
     updated_model_filename = args.model_out
@@ -50,21 +52,21 @@ def main():
     logger.info(f'Experience files: {experience_files}')
     logger.info(f'Updated agent filename: {updated_model_filename}')
 
-    encoder = SimpleEncoder((19, 19))
+    encoder = get_encoder_by_name('simple', board_size=board_size)
     print(f'>>>LOADING AGENT')
     learning_agent = create_bot(learning_model_filename, encoder)
 
     for exp_filename in experience_files:
         print(f'>>>LOADING EXPERIENCE: {exp_filename}')
-        exp_buffer = rl.load_experience(h5py.File(exp_filename))
+        generator = ExpGenerator(exp_file=exp_filename, batch_size=batch_size, num_planes=encoder.num_planes)
         print(f'>>>AGENT TRAINING')
         learning_agent.train(
-            exp_buffer,
+            generator,
             lr=learning_rate,
             batch_size=batch_size)
     print(f'>>>Updated agent is getting serialized.')
     with h5py.File(updated_model_filename, 'w') as updated_agent_outf:
-        learning_agent.serialize(updated_agent_outf)
+        save_model(filepath=updated_agent_outf, model=learning_agent.model)
 
     logger.info('TRAINER AC: FINISHED')
 

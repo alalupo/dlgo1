@@ -2,8 +2,11 @@ import argparse
 import h5py
 from collections import namedtuple
 
-from dlgo import rl
+from keras.models import load_model
+
+from dlgo.rl import ACAgent
 from dlgo import scoring
+from dlgo.encoders.base import get_encoder_by_name
 from dlgo.goboard_fast import GameState, Player
 
 BOARD_SIZE = 19
@@ -11,6 +14,16 @@ BOARD_SIZE = 19
 
 class GameRecord(namedtuple('GameRecord', 'moves winner')):
     pass
+
+
+def get_model(model_path):
+    try:
+        model_file = open(model_path, 'r')
+    finally:
+        model_file.close()
+    with h5py.File(model_path, "r") as model_file:
+        model = load_model(model_file)
+    return model
 
 
 def simulate_game(black_player, white_player):
@@ -34,14 +47,18 @@ def simulate_game(black_player, white_player):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--agent1', required=True)
-    parser.add_argument('--agent2', required=True)
+    parser.add_argument('--model1', required=True)
+    parser.add_argument('--model2', required=True)
     parser.add_argument('--num-games', '-n', type=int, default=10)
 
     args = parser.parse_args()
-    agent1 = rl.load_ac_agent(h5py.File(args.agent1))
-    agent2 = rl.load_ac_agent(h5py.File(args.agent2))
+    model1 = get_model(args.model1)
+    model2 = get_model(args.model2)
     num_games = args.num_games
+
+    encoder = get_encoder_by_name('simple', 9)
+    agent1 = ACAgent(model1, encoder)
+    agent2 = ACAgent(model2, encoder)
 
     wins = 0
     losses = 0

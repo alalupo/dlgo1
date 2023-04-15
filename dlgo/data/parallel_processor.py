@@ -51,20 +51,14 @@ class GoDataProcessor:
         self.data_dir = finder.data_dir
         self.test_ratio = 0.2
 
-    def load_go_data(self, data_type='train', num_samples=1000,
-                     use_generator=False):
+    def load_go_data(self, data_type='train', num_samples=1000):
         index = KGSIndex(data_directory=self.data_dir)
         index.download_files()
         sampler = Sampler(num_test_games=np.floor(num_samples * self.test_ratio))
         data = sampler.draw_data(data_type, num_samples)
-        self.map_to_workers(data_type, data)  # <1>
+        self.map_to_workers(data_type, data)
         print(f'load data: generator')
-        if use_generator:
-            generator = DataGenerator(self.data_dir, data)
-            return generator  # <2>
-        else:
-            features_and_labels = self.consolidate_games(data_type, data)
-            return features_and_labels  # <3>
+        return DataGenerator(self.data_dir, data)
 
     def unzip_data(self, zip_file_name):
         this_gz = gzip.open(self.data_dir.joinpath(zip_file_name))
@@ -75,8 +69,8 @@ class GoDataProcessor:
         return tar_file
 
     def process_zip(self, zip_file_name, data_file_name, game_list):
-        ram_limit = 50000
-        ram_limit_crossed = False
+        size_limit = 50000
+        size_limit_crossed = False
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir.joinpath(tar_file))
         name_list = zip_file.getnames()
@@ -85,8 +79,8 @@ class GoDataProcessor:
         feature_shape = np.insert(shape, 0, np.asarray([total_examples]))
         feature_shape = tuple(feature_shape)
         print(f'FEATURE SHAPE = {feature_shape}')
-        if total_examples > ram_limit:
-            ram_limit_crossed = True
+        if total_examples > size_limit:
+            size_limit_crossed = True
             feature_mapper = NpArrayMapper(
                 self.data_dir.joinpath('tmp_' + zip_file_name + '_features.npy'), feature_shape, np.float64)
             feature_mapper.create_map()
@@ -96,7 +90,8 @@ class GoDataProcessor:
         else:
             features = np.zeros(feature_shape)
             labels = np.zeros((total_examples,))
-        # print(f'DTYPE = {features.dtype}')
+            print(f'FEATURES DTYPE = {features.dtype}')
+            print(f'LABELS DTYPE = {labels.dtype}')
 
         counter = 0
         for index in game_list:
@@ -119,7 +114,7 @@ class GoDataProcessor:
                     else:
                         move = Move.pass_turn()
                     if first_move_done and point is not None:
-                        if ram_limit_crossed:
+                        if size_limit_crossed:
                             feature_mapper.write_to_map(counter, self.encoder.encode(game_state))
                             label_mapper.write_to_map(counter, self.encoder.encode_point(point))
                         else:
@@ -134,7 +129,7 @@ class GoDataProcessor:
         label_file_base = self.data_dir.joinpath(data_file_name + '_labels_%d')
 
         chunk = 0  # Due to files with large content, split up after chunk-size
-        if ram_limit_crossed:
+        if size_limit_crossed:
             logger.info(f'Features size: {feature_mapper.get_size()} MB')
             num_chunks = feature_mapper.num_chunks()
             for i in range(num_chunks):
@@ -160,37 +155,37 @@ class GoDataProcessor:
                 np.save(label_file, current_labels)
         print(f'=== Zip processing done. ===')
 
-    def consolidate_games(self, name, samples):
-        files_needed = set(file_name for file_name, index in samples)
-        file_names = []
-        for zip_file_name in files_needed:
-            file_name = zip_file_name.replace('.tar.gz', '') + name
-            file_names.append(file_name)
-
-        feature_list = []
-        label_list = []
-        for file_name in file_names:
-            file_prefix = file_name.replace('.tar.gz', '')
-            base = self.data_dir.joinpath(file_prefix + '_features_*.npy')
-            for feature_file in glob.glob(base):
-                label_file = feature_file.replace('features', 'labels')
-                x = np.load(feature_file)
-                y = np.load(label_file)
-                x = x.astype('float32')
-                y = to_categorical(y.astype(int), 19 * 19)
-                feature_list.append(x)
-                label_list.append(y)
-
-        features = np.concatenate(feature_list, axis=0)
-        labels = np.concatenate(label_list, axis=0)
-
-        feature_file = self.data_dir.joinpath(name)
-        label_file = self.data_dir.joinpath(name)
-
-        np.save(feature_file, features)
-        np.save(label_file, labels)
-
-        return features, labels
+    # def consolidate_games(self, name, samples):
+    #     files_needed = set(file_name for file_name, index in samples)
+    #     file_names = []
+    #     for zip_file_name in files_needed:
+    #         file_name = zip_file_name.replace('.tar.gz', '') + name
+    #         file_names.append(file_name)
+    #
+    #     feature_list = []
+    #     label_list = []
+    #     for file_name in file_names:
+    #         file_prefix = file_name.replace('.tar.gz', '')
+    #         base = self.data_dir.joinpath(file_prefix + '_features_*.npy')
+    #         for feature_file in glob.glob(base):
+    #             label_file = feature_file.replace('features', 'labels')
+    #             x = np.load(feature_file)
+    #             y = np.load(label_file)
+    #             x = x.astype('float32')
+    #             y = to_categorical(y.astype(int), 19 * 19)
+    #             feature_list.append(x)
+    #             label_list.append(y)
+    #
+    #     features = np.concatenate(feature_list, axis=0)
+    #     labels = np.concatenate(label_list, axis=0)
+    #
+    #     feature_file = self.data_dir.joinpath(name)
+    #     label_file = self.data_dir.joinpath(name)
+    #
+    #     np.save(feature_file, features)
+    #     np.save(label_file, labels)
+    #
+    #     return features, labels
 
     @staticmethod
     def get_handicap(sgf):  # Get handicap stones
@@ -225,7 +220,7 @@ class GoDataProcessor:
                                         data_file_name, indices_by_zip_name[zip_name], self.board_size))
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pnum = 1 # By default pnum = cores but can be set to 1 if no multiprocessing needed
+        pnum = 1  # By default pnum = cores but can be set to 1 if no multiprocessing needed
         print(f'The number of CPU: {cores}')
         print(f'The actual number of parallel processes: {pnum}')
         with get_context("spawn").Pool(processes=pnum, initializer=self.start_process) as pool:

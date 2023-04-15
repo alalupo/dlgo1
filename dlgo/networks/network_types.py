@@ -39,7 +39,7 @@ class SmallNetwork:
             Activation('relu'),
             Dropout(0.1),
 
-            Flatten(),
+            Flatten(data_format=self.channels_format),
             Dense(512),
             Activation('relu'),
         ]

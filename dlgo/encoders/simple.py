@@ -7,8 +7,8 @@ from dlgo.networks import network_types
 
 
 class SimpleEncoder(Encoder):
-    def __init__(self, board_size):
-        self.board_width, self.board_height = board_size
+    def __init__(self, board_size=(19, 19)):
+        self.board_width, self.board_height = board_size[0], board_size[1]
         # The function of all 11 planes:
         #   0 - 3. black stones with 1, 2, 3, 4+ liberties
         #   4 - 7. white stones with 1, 2, 3, 4+ liberties
@@ -47,7 +47,7 @@ class SimpleEncoder(Encoder):
                         board_tensor[liberty_plane] = 1
                     else:
                         board_tensor[liberty_plane] = 1
-
+        # transposing to adjust to channels_last tensorflow format
         return np.transpose(board_tensor, (1, 2, 0))
 
     def encode_point(self, point):

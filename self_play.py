@@ -70,8 +70,8 @@ class SelfPlayer:
         print(f'>>>Creating two bots from {self.model_name}')
         agent1 = self.create_bot(1)
         agent2 = self.create_bot(2)
-        collector1 = rl.EpisodeExperienceCollector(self.exp_path)
-        collector2 = rl.EpisodeExperienceCollector(self.exp_path)
+        collector1 = rl.EpisodeExperienceCollector(self.exp_path, self.board_size, self.encoder.num_planes)
+        collector2 = rl.EpisodeExperienceCollector(self.exp_path, self.board_size, self.encoder.num_planes)
         agent1.set_collector(collector1)
         agent2.set_collector(collector2)
 

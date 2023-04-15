@@ -11,8 +11,8 @@ from keras.models import Sequential
 import keras.backend as K
 
 from dlgo.data.parallel_processor import GoDataProcessor
-from dlgo.encoders.simple import SimpleEncoder
-from dlgo.networks import network_types
+from dlgo.encoders.base import get_encoder_by_name
+from dlgo.networks.func_networks import show_data_format, TrainerNetwork
 
 logging.config.fileConfig('log_confs/train_logging.conf')
 logger = logging.getLogger('trainingLogger')
@@ -22,10 +22,10 @@ def locate_directory():
     path = Path(__file__)
     project_lvl_path = path.parent
     model_directory_name = 'models'
-    data_directory = project_lvl_path.joinpath(model_directory_name)
-    if not os.path.exists(data_directory):
+    model_directory = project_lvl_path.joinpath(model_directory_name)
+    if not os.path.exists(model_directory):
         raise FileNotFoundError
-    return str(data_directory)
+    return str(model_directory)
 
 
 def show_intro():
@@ -33,7 +33,7 @@ def show_intro():
     print(f'Don\'t forget to clean up data directory of npy files before you start training a new model.')
     print(f'Put into the terminal the following command:')
     print(f'    find ./data/ -name \*.npy -delete')
-    network_types.show_data_format()
+    show_data_format()
     print(f'*' * 80)
     print(f'Usage example:')
     print(f'python3 trainer.py --board-size 19 --num-games 1000 --epochs 10')
@@ -65,9 +65,9 @@ def main():
     num_games = args.num_games
     epochs = args.epochs
 
-    encoder = SimpleEncoder((board_size, board_size))
-    input_shape = (board_size, board_size, encoder.num_planes)
-    network = network_types.SmallNetwork(input_shape)
+    encoder = get_encoder_by_name('simple', board_size=board_size)
+    input_shape = encoder.shape_for_others()
+    network = TrainerNetwork(encoder=encoder)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     loss_function = 'categorical_crossentropy'
@@ -118,9 +118,9 @@ class Trainer:
 
     def get_training_dataset(self):
         processor = GoDataProcessor(encoder=self.encoder.name(), board_size=self.board_size)
-        train_generator = processor.load_go_data('train', num_samples=self.num_games, use_generator=True)
+        train_generator = processor.load_go_data('train', num_samples=self.num_games)
         print(f'>>>Train generator loaded')
-        test_generator = processor.load_go_data('test', num_samples=self.num_games, use_generator=True)
+        test_generator = processor.load_go_data('test', num_samples=self.num_games)
         print(f'>>>Test generator loaded')
         return train_generator, test_generator
 
