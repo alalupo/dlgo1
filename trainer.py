@@ -126,18 +126,16 @@ class Trainer:
                                    save_weights_only=False,
                                    save_best_only=True)
         history = self.model.fit(
-            train_generator.generate(batch_size, self.num_classes),
+            train_generator.generate(batch_size),
             epochs=self.epochs,
-            steps_per_epoch=train_generator.get_num_samples(batch_size=batch_size,
-                                                            num_classes=self.num_classes) / batch_size,
-            validation_data=test_generator.generate(batch_size, self.num_classes),
-            validation_steps=test_generator.get_num_samples(batch_size=batch_size,
-                                                            num_classes=self.num_classes) / batch_size,
+            steps_per_epoch=train_generator.get_num_samples(batch_size=batch_size) / batch_size,
+            validation_data=test_generator.generate(batch_size),
+            validation_steps=test_generator.get_num_samples(batch_size=batch_size) / batch_size,
             callbacks=[callback])
         print(f'>>>Model evaluating...')
         score = self.model.evaluate(
-            test_generator.generate(batch_size, self.num_classes),
-            steps=test_generator.get_num_samples(batch_size=batch_size, num_classes=self.num_classes) / batch_size)
+            test_generator.generate(batch_size),
+            steps=test_generator.get_num_samples(batch_size=batch_size) / batch_size)
         print(f'*' * 80)
         logger.info(f'Test loss: {score[0]}')
         logger.info(f'Test accuracy: {score[1]}')
@@ -196,21 +194,19 @@ class Trainer:
         new_model.compile(optimizer=self.optimizer, loss=self.loss, metrics=['accuracy'])
 
         # Train the new model with additional epochs
-        history = new_model.fit(train_generator.generate(batch_size, self.num_classes),
+        history = new_model.fit(train_generator.generate(batch_size),
                                 epochs=self.epochs,
-                                steps_per_epoch=train_generator.get_num_samples(batch_size=batch_size,
-                                                                                num_classes=self.num_classes) / batch_size,
-                                validation_data=test_generator.generate(batch_size, self.num_classes),
-                                validation_steps=test_generator.get_num_samples(batch_size=batch_size,
-                                                                                num_classes=self.num_classes) / batch_size,
+                                steps_per_epoch=train_generator.get_num_samples(batch_size=batch_size) / batch_size,
+                                validation_data=test_generator.generate(batch_size),
+                                validation_steps=test_generator.get_num_samples(batch_size=batch_size) / batch_size,
                                 callbacks=[checkpoint_callback])
 
         # Save the final model
         new_model.save(new_filename)
         print(f'>>>Model evaluating...')
         score = new_model.evaluate(
-            test_generator.generate(batch_size, self.num_classes),
-            steps=test_generator.get_num_samples(batch_size=batch_size, num_classes=self.num_classes) / batch_size)
+            test_generator.generate(batch_size),
+            steps=test_generator.get_num_samples(batch_size=batch_size) / batch_size)
         print(f'*' * 80)
         logger.info(f'Test loss: {score[0]}')
         logger.info(f'Test accuracy: {score[1]}')

@@ -3,11 +3,9 @@ import logging
 import multiprocessing
 import os
 import os.path
-import random
 import shutil
 import sys
 import tarfile
-import time
 from multiprocessing import get_context
 
 import numpy as np
@@ -54,7 +52,7 @@ class GoDataProcessor:
         samples = sampler.draw_data(data_type, num_samples)
         sampler.print_available_games()
         self.map_to_workers(data_type, samples, num_samples)
-        return DataGenerator(self.data_dir, samples)
+        return DataGenerator(self.data_dir, samples, self.board_size, data_type)
 
     def map_to_workers(self, data_type, samples, num_samples):
         zip_names = set()
@@ -92,7 +90,7 @@ class GoDataProcessor:
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir.joinpath(tar_file))
         name_list = zip_file.getnames()
-        total_moves = self.num_total_moves(zip_file, game_list, name_list)
+        # total_moves = self.num_total_moves(zip_file, game_list, name_list)
         # logger.info(f'ZIP FILE NAME: {zip_file_name}, GAME LIST\'S LENGTH={len(game_list)}')
         # logger.info(f'ZIP FILE NAME: {zip_file_name}, GAME_LIST={game_list}')
         # logger.info(f'ZIP FILE NAME: {zip_file_name}, TOTAL MOVES: {total_moves}')
@@ -101,8 +99,8 @@ class GoDataProcessor:
         for index in game_list:
             counter = 0
             moves = self.num_moves_in_index(zip_file, index, name_list)
-            index_feature_shape = tuple(np.insert(shape, 0, np.asarray([moves])))
-            features = np.zeros(index_feature_shape)
+            feature_shape = tuple(np.insert(shape, 0, np.asarray([moves])))
+            features = np.zeros(feature_shape)
             labels = np.zeros((moves,))
             # logger.info(f'ZIP FILE NAME: {zip_file_name}, INDEX={index}')
             # logger.info(f'ZIP FILE NAME: {zip_file_name}, INDEX MOVES: {moves}')
@@ -149,16 +147,19 @@ class GoDataProcessor:
                 current_labels, labels = labels[:size], labels[size:]
                 np.save(feature_file, current_features)
                 np.save(label_file, current_labels)
-            self.progressBar(game_list.index(index), len(game_list), 'games.')
+            self.progress_bar(game_list.index(index), len(game_list), 'games.')
+        self.progress_bar(len(game_list), len(game_list), 'games.')
         print(f'')
         if data_type == 'train':
             GoDataProcessor.total_train_samples = num_samples
             GoDataProcessor.processed_train_samples += len(game_list)
-            logger.info(f'TOTAL PROGRESS: {GoDataProcessor.processed_train_samples}/{GoDataProcessor.total_train_samples}')
+            logger.info(
+                f'TOTAL PROGRESS: {GoDataProcessor.processed_train_samples}/{GoDataProcessor.total_train_samples}')
         else:
-            GoDataProcessor.total_test_samples = num_samples
+            GoDataProcessor.total_test_samples = np.floor(num_samples * self.test_ratio)
             GoDataProcessor.processed_test_samples += len(game_list)
-            logger.info(f'TOTAL PROGRESS: {GoDataProcessor.processed_test_samples}/{GoDataProcessor.total_test_samples}')
+            logger.info(
+                f'TOTAL PROGRESS: {GoDataProcessor.processed_test_samples}/{GoDataProcessor.total_test_samples}')
 
     def unzip_data(self, zip_file_name):
         this_gz = gzip.open(self.data_dir.joinpath(zip_file_name))
@@ -229,11 +230,10 @@ class GoDataProcessor:
         print(f'Starting {multiprocessing.current_process().name}')
 
     @staticmethod
-    def progressBar(count_value, total, suffix=''):
+    def progress_bar(count_value, total, suffix=''):
         bar_length = 100
         filled_up_Length = int(round(bar_length * count_value / float(total)))
         percentage = round(100.0 * count_value / float(total), 1)
         bar = '=' * filled_up_Length + '-' * (bar_length - filled_up_Length)
         sys.stdout.write('[%s] %s%s %s\r' % (bar, percentage, '%', suffix))
         sys.stdout.flush()
-

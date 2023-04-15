@@ -1,0 +1,5 @@
+#! /bin/bash
+
+find ../../data -name \*.npy -delete
+rm -f ../../trainer.log
+rm -f ../../test_samples.py
