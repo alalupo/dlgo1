@@ -6,7 +6,7 @@ import keras.backend as K
 from keras.models import Model, save_model
 
 from dlgo.encoders.base import get_encoder_by_name
-from dlgo.networks.ac_network import AgentCriticNetwork
+from dlgo.networks.func_networks import AgentCriticNetwork
 
 
 def main():

@@ -34,6 +34,7 @@ class TrainerNetwork:
         self.num_classes = self.encoder.num_points()
         self.board_input = Input(shape=encoder.shape_for_others(), name='board_input')
         self.name = 'trainer'
+        self.output = self.define_layers()
 
     def define_layers(self):
 

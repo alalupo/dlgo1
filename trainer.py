@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
 from keras.layers.core import Dense
-from keras.models import Sequential
+from keras.models import Model, Sequential
 import keras.backend as K
 
 from dlgo.data.parallel_processor import GoDataProcessor
@@ -105,11 +105,8 @@ class Trainer:
         self.model = self.build_model()
 
     def build_model(self):
-        network_layers = self.network.layers()
-        model = Sequential()
-        for layer in network_layers:
-            model.add(layer)
-        model.add(Dense(self.num_classes, activation='softmax'))
+        model = Model(inputs=self.network.board_input,
+                      outputs=self.network.output)
         print(f'*' * 80)
         print(f'Model summary:')
         model.summary()
