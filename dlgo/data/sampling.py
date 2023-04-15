@@ -23,34 +23,12 @@ class Sampler:
         self.test_folder = self.finder.project_path.joinpath('test_samples.py')
         self.cap_year = cap_year
         random.seed(seed)
+        # self.print_available_games()
         self.compute_test_samples()
-        self.print_test_games()
-
-    def print_test_games(self):
-        latest_year = 2000
-        earliest_year = 2020
-        for test_game in self.test_games:
-            filename = test_game[0]
-            year = int(filename.split('-')[1].split('_')[0])
-            if year > latest_year:
-                latest_year = year
-            if year < earliest_year:
-                earliest_year = year
-        logger.debug(f'The latest year in the test set: {latest_year}')
-        logger.debug(f'The earliest year in the test set: {earliest_year}')
-
-    def print_available_games(self):
-        """Draw num_sample_games many training games from index."""
-        available_games = 0
-        index = KGSIndex(data_directory=self.data_dir)
-
-        for fileinfo in index.file_info:
-            num_games = fileinfo['num_games']
-            available_games += num_games
-        logger.info(f'>>>Total number of KGS games: {available_games}')
 
     def draw_data(self, data_type, num_samples):
         if data_type == 'test':
+            self.print_test_games()
             return self.test_games
         elif data_type == 'train' and num_samples is not None:
             return self.draw_training_samples(num_samples)
@@ -162,3 +140,27 @@ class Sampler:
                 sample_set.add(sample)
         logger.debug(f'Drawn all samples, ie : {len(sample_set)} samples.')
         return list(sample_set)
+
+    def print_test_games(self):
+        latest_year = 2000
+        earliest_year = 2020
+        for test_game in self.test_games:
+            filename = test_game[0]
+            year = int(filename.split('-')[1].split('_')[0])
+            if year > latest_year:
+                latest_year = year
+            if year < earliest_year:
+                earliest_year = year
+        logger.debug(f'The latest year in the test set: {latest_year}')
+        logger.debug(f'The earliest year in the test set: {earliest_year}')
+
+    def print_available_games(self):
+        """Draw num_sample_games many training games from index."""
+        available_games = 0
+        index = KGSIndex(data_directory=self.data_dir)
+
+        for fileinfo in index.file_info:
+            num_games = fileinfo['num_games']
+            available_games += num_games
+        logger.info(f'>>>Total number of KGS games: {available_games}')
+

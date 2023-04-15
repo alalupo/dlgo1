@@ -50,7 +50,6 @@ class GoDataProcessor:
         index.download_files()
         sampler = Sampler(num_test_games=np.floor(num_samples * self.test_ratio))
         samples = sampler.draw_data(data_type, num_samples)
-        sampler.print_available_games()
         self.map_to_workers(data_type, samples, num_samples)
         return DataGenerator(self.data_dir, samples, self.board_size, data_type)
 
