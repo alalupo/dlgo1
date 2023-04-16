@@ -31,7 +31,8 @@ def show_intro():
 
 def first_training(trainer, batch_size):
     logger.info(f'FIRST TRAINING')
-    trainer.train_model(batch_size)
+    train_generator, test_generator = trainer.get_datasets()
+    trainer.train_model(train_generator, test_generator, batch_size)
 
 
 def next_training(trainer, batch_size):
@@ -40,6 +41,7 @@ def next_training(trainer, batch_size):
     logger.info(f'MODEL NAME: {filename}')
     trainer.continue_training(batch_size, filename)
 
+
 def cleaning():
     samples_file = Path('test_samples.py')
     if Path(samples_file).is_file():
@@ -47,6 +49,7 @@ def cleaning():
     for path in Path("./data").glob("*.npy"):
         if Path(path).is_file():
             Path.unlink(path)
+
 
 def main():
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -66,7 +69,8 @@ def main():
     input_shape = encoder.shape_for_others()
     network = TrainerNetwork(encoder=encoder)
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+    # optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+    optimizer = tf.keras.optimizers.SGD()
     loss_function = 'categorical_crossentropy'
     batch_size = 128
 
@@ -121,9 +125,9 @@ class Trainer:
         print(f'*' * 80)
         return model
 
-    def train_model(self, batch_size=128):
+    def train_model(self, train_generator, test_generator, batch_size=128):
         K.clear_session()
-        train_generator, test_generator = self.get_datasets()
+        # train_generator, test_generator = self.get_datasets()
         encoder_name = self.encoder.name()
         network_name = self.network.name
         print(f'>>>Model compiling...')

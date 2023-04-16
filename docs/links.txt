@@ -1,0 +1,5 @@
+NCHW / NHWC:
+https://github.com/maxpumperla/deep_learning_and_the_game_of_go/issues/80#issuecomment-749804043
+
+Multiprocessing:
+https://github.com/maxpumperla/deep_learning_and_the_game_of_go/issues/63#issuecomment-616440072

@@ -52,8 +52,6 @@ class GoDataProcessor:
         samples = sampler.draw_data(data_type, num_samples)
         logger.info(f'{len(samples)} SAMPLES:')
         logger.info(f'{samples}')
-        print(f'{len(samples)} SAMPLES:')
-        print(f'{samples}')
         self.map_to_workers(data_type, samples, num_samples)
         return DataGenerator(self.data_dir, samples, self.board_size, data_type)
 
@@ -76,7 +74,7 @@ class GoDataProcessor:
                                         data_type, num_samples))
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pnum = 1  # By default pnum = cores but can be set to 1 if no multiprocessing needed
+        pnum = cores  # By default pnum = cores but can be set to 1 if no multiprocessing needed
         print(f'The number of CPU: {cores}')
         print(f'The actual number of parallel processes: {pnum}')
         with get_context("spawn").Pool(processes=pnum, initializer=self.start_process) as pool:
@@ -155,12 +153,14 @@ class GoDataProcessor:
         print(f'')
         if data_type == 'train':
             GoDataProcessor.total_train_samples = num_samples
-            GoDataProcessor.processed_train_samples += len(game_list)
+            # GoDataProcessor.processed_train_samples += len(game_list)
+            GoDataProcessor.processed_train_samples += 1
             print(
                 f'TOTAL PROGRESS: {GoDataProcessor.processed_train_samples}/{GoDataProcessor.total_train_samples}')
         else:
-            GoDataProcessor.total_test_samples = np.floor(num_samples * self.test_ratio)
-            GoDataProcessor.processed_test_samples += len(game_list)
+            GoDataProcessor.total_test_samples = int(num_samples * self.test_ratio)
+            # GoDataProcessor.processed_test_samples += len(game_list)
+            GoDataProcessor.processed_test_samples += 1
             print(
                 f'TOTAL PROGRESS: {GoDataProcessor.processed_test_samples}/{GoDataProcessor.total_test_samples}')
 
