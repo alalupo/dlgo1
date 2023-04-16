@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from dlgo.data.mmap_np import NpArrayMapper
+from _tmp.mmap_np import NpArrayMapper
 
 
 class MemmapTest(unittest.TestCase):

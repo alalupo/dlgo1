@@ -40,9 +40,17 @@ def next_training(trainer, batch_size):
     logger.info(f'MODEL NAME: {filename}')
     trainer.continue_training(batch_size, filename)
 
+def cleaning():
+    samples_file = Path('test_samples.py')
+    if Path(samples_file).is_file():
+        Path.unlink(samples_file)
+    for path in Path("./data").glob("*.npy"):
+        if Path(path).is_file():
+            Path.unlink(path)
 
 def main():
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    cleaning()
     logger.info('TRAINER: STARTED')
     parser = argparse.ArgumentParser()
     parser.add_argument('--board-size', '-size', type=int, default=19, required=False)
@@ -75,6 +83,7 @@ def main():
 
     trainer = Trainer(network, encoder, num_games, epochs, optimizer, loss_function, board_size)
     first_training(trainer, batch_size)
+    cleaning()
     logger.info('TRAINER: FINISHED')
 
 
@@ -125,17 +134,21 @@ class Trainer:
         callback = ModelCheckpoint(self.model_dir + '/model_' + encoder_name + '_' + network_name + '_epoch_{epoch}.h5',
                                    save_weights_only=False,
                                    save_best_only=True)
+        train_steps = train_generator.get_num_samples(batch_size=batch_size) // batch_size
+        test_steps = test_generator.get_num_samples(batch_size=batch_size) // batch_size
+        logger.info(f'Train steps = {train_steps}')
+        logger.info(f'Test steps = {test_steps}')
         history = self.model.fit(
             train_generator.generate(batch_size),
             epochs=self.epochs,
-            steps_per_epoch=train_generator.get_num_samples(batch_size=batch_size) / batch_size,
+            steps_per_epoch=train_steps,
             validation_data=test_generator.generate(batch_size),
-            validation_steps=test_generator.get_num_samples(batch_size=batch_size) / batch_size,
+            validation_steps=test_steps,
             callbacks=[callback])
         print(f'>>>Model evaluating...')
         score = self.model.evaluate(
             test_generator.generate(batch_size),
-            steps=test_generator.get_num_samples(batch_size=batch_size) / batch_size)
+            steps=test_steps)
         print(f'*' * 80)
         logger.info(f'Test loss: {score[0]}')
         logger.info(f'Test accuracy: {score[1]}')

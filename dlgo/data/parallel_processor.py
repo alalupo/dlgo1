@@ -50,6 +50,10 @@ class GoDataProcessor:
         index.download_files()
         sampler = Sampler(num_test_games=np.floor(num_samples * self.test_ratio))
         samples = sampler.draw_data(data_type, num_samples)
+        logger.info(f'{len(samples)} SAMPLES:')
+        logger.info(f'{samples}')
+        print(f'{len(samples)} SAMPLES:')
+        print(f'{samples}')
         self.map_to_workers(data_type, samples, num_samples)
         return DataGenerator(self.data_dir, samples, self.board_size, data_type)
 
@@ -152,12 +156,12 @@ class GoDataProcessor:
         if data_type == 'train':
             GoDataProcessor.total_train_samples = num_samples
             GoDataProcessor.processed_train_samples += len(game_list)
-            logger.info(
+            print(
                 f'TOTAL PROGRESS: {GoDataProcessor.processed_train_samples}/{GoDataProcessor.total_train_samples}')
         else:
             GoDataProcessor.total_test_samples = np.floor(num_samples * self.test_ratio)
             GoDataProcessor.processed_test_samples += len(game_list)
-            logger.info(
+            print(
                 f'TOTAL PROGRESS: {GoDataProcessor.processed_test_samples}/{GoDataProcessor.total_test_samples}')
 
     def unzip_data(self, zip_file_name):
