@@ -1,6 +1,7 @@
-import numpy as np
-import h5py
 import logging
+
+import h5py
+import numpy as np
 
 __all__ = [
     'EpisodeExperienceCollector',
@@ -28,6 +29,25 @@ class EpisodeExperienceCollector(object):
     def show_size(array):
         logging.info(f'EXPERIENCE COLLECTOR: {round(array.nbytes / 1000000, 2)} MB')
 
+    @staticmethod
+    def combine_experience(collectors):
+        total_states = []
+        total_actions = []
+        total_rewards = []
+        total_advantages = []
+        for c in collectors:
+            with h5py.File(c.str_h5file, 'r') as f:
+                total_states.append(np.array(f['experience/states']))
+                total_actions.append(np.array(f['experience/actions']))
+                total_rewards.append(np.array(f['experience/rewards']))
+                total_advantages.append(np.array(f['experience/advantages']))
+        combined_states = np.concatenate([s for s in total_states])
+        combined_actions = np.concatenate([a for a in total_actions])
+        combined_rewards = np.concatenate([r for r in total_rewards])
+        combined_advantages = np.concatenate([adv for adv in total_advantages])
+
+        return combined_states, combined_actions, combined_rewards, combined_advantages
+
     def begin_episode(self):
         self._current_episode_states = []
         self._current_episode_actions = []
@@ -44,7 +64,7 @@ class EpisodeExperienceCollector(object):
         rewards = [reward for _ in range(num_states)]
         advantages = []
         for i in range(num_states):
-            advantage = reward - self._current_episode_estimated_values[i]
+            advantage = round(reward - self._current_episode_estimated_values[i], 2)
             advantages.append(advantage)
 
         states, actions, rewards, advantages = self.get_buffer_data(self._current_episode_states,
@@ -73,8 +93,20 @@ class EpisodeExperienceCollector(object):
         else:
             h5file.create_group('experience')
             h5file['experience'].create_dataset(
-                'states', data=states, maxshape=(None, self.board_size, self.board_size, self.num_planes))
-            h5file['experience'].create_dataset('actions', data=actions, maxshape=(None,))
-            h5file['experience'].create_dataset('rewards', data=rewards, maxshape=(None,))
-            h5file['experience'].create_dataset('advantages', data=advantages, maxshape=(None,))
+                name='states',
+                shape=states.shape,
+                data=states,
+                maxshape=(None, self.board_size, self.board_size, self.num_planes))
+            h5file['experience'].create_dataset(name='actions', data=actions, maxshape=(None,))
+            h5file['experience'].create_dataset(name='rewards', data=rewards, maxshape=(None,))
+            h5file['experience'].create_dataset(name='advantages', data=advantages, maxshape=(None,))
 
+            # h5file['experience/states'].resize((h5file['experience/states'].shape[0] + states.shape[0]), axis=0)
+            # h5file['experience/states'][-states.shape[0]:] = states
+            # h5file['experience/actions'].resize((h5file['experience/actions'].shape[0] + actions.shape[0]), axis=0)
+            # h5file['experience/actions'][-actions.shape[0]:] = actions
+            # h5file['experience/rewards'].resize((h5file['experience/rewards'].shape[0] + rewards.shape[0]), axis=0)
+            # h5file['experience/rewards'][-rewards.shape[0]:] = rewards
+            # h5file['experience/advantages'].resize(
+            #     (h5file['experience/advantages'].shape[0] + advantages.shape[0]), axis=0)
+            # h5file['experience/advantages'][-advantages.shape[0]:] = advantages

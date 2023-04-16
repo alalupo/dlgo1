@@ -1,30 +1,40 @@
+import h5py
 import numpy as np
-
-from dlgo.rl.experience import EpisodeExperienceCollector
 
 
 class ExpGenerator:
-    def __init__(self, exp_file, batch_size, num_planes):
+    def __init__(self, exp_file, batch_size, num_planes, board_size):
         self.exp_file = exp_file
         self.batch_size = batch_size
         self.num_planes = num_planes
-        self.collector = EpisodeExperienceCollector(self.exp_file, self.num_planes)
-        self.__batch_index = 0
+        self.board_size = board_size
+        self.num_moves = board_size * board_size
+        self.length = self.length()
 
     def __len__(self):
-        # steps_per_epoch, if unspecified, will use the len(generator) as a number of steps.
-        # hence this
-        return len(self.collector) / self.batch_size
+        return self.length
+
+    def length(self):
+        with h5py.File(self.exp_file, 'r') as f:
+            return int(f['experience']['states'].shape[0] / self.batch_size)
 
     def next(self):
         return self.__next__()
 
     def __next__(self):
-        for i in range(0, len(self.collector), self.batch_size):
-            start = i
-            stop = i + self.batch_size
-            states = np.array(self.exp_file['experience']['states'][start:stop]),
-            actions = np.array(self.exp_file['experience']['actions'][start:stop]),
-            rewards = np.array(self.exp_file['experience']['rewards'][start:stop]),
-            advantages = np.array(self.exp_file['experience']['advantages'][start:stop])
-            yield states, actions, rewards, advantages
+        with h5py.File(self.exp_file, 'r') as f:
+            states = np.zeros((self.batch_size, self.board_size, self.board_size, self.num_planes))
+            policy_target = np.zeros((self.batch_size, self.num_moves))
+            value_target = np.zeros((self.batch_size,))
+            for i in range(self.batch_size):
+                state = f['experience/states'][i]
+                action = f['experience/actions'][i]
+                reward = f['experience/rewards'][i]
+                advantage = f['experience/advantages'][i]
+                states[i] = state
+                policy_target[i][action] = advantage
+                value_target[i] = reward
+            targets = [policy_target, value_target]
+            yield states, targets
+
+

@@ -58,7 +58,10 @@ def main():
 
     for exp_filename in experience_files:
         print(f'>>>LOADING EXPERIENCE: {exp_filename}')
-        generator = ExpGenerator(exp_file=exp_filename, batch_size=batch_size, num_planes=encoder.num_planes)
+        generator = ExpGenerator(exp_file=exp_filename,
+                                 batch_size=batch_size,
+                                 num_planes=encoder.num_planes,
+                                 board_size=board_size)
         print(f'>>>AGENT TRAINING')
         learning_agent.train(
             generator,
@@ -66,7 +69,7 @@ def main():
             batch_size=batch_size)
     print(f'>>>Updated agent is getting serialized.')
     with h5py.File(updated_model_filename, 'w') as updated_agent_outf:
-        save_model(filepath=updated_agent_outf, model=learning_agent.model)
+        save_model(model=learning_agent.model, filepath=updated_agent_outf, save_format='h5')
 
     logger.info('TRAINER AC: FINISHED')
 
