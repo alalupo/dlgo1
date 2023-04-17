@@ -31,22 +31,15 @@ class SimpleEncoder(Encoder):
             for c in range(self.board_width):
                 p = Point(row=r + 1, col=c + 1)
                 go_string = game_state.board.get_go_string(p)
-
                 if go_string is None:
                     if game_state.does_move_violate_ko(game_state.next_player,
                                                        Move.play(p)):
-                        if self.channels_sequence == 'channels_last':
-                            board_tensor[10] = 1
-                        else:
-                            board_tensor[10] = 1
+                        board_tensor[10] = 1
                 else:
                     liberty_plane = min(4, go_string.num_liberties) - 1
                     if go_string.color == Player.white:
                         liberty_plane += 4
-                    if self.channels_sequence == 'channels_last':
-                        board_tensor[liberty_plane] = 1
-                    else:
-                        board_tensor[liberty_plane] = 1
+                    board_tensor[liberty_plane] = 1
         # transposing to adjust to channels_last tensorflow format
         return np.transpose(board_tensor, (1, 2, 0))
 
