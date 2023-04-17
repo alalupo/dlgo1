@@ -24,6 +24,7 @@ class GameRecord(namedtuple('GameRecord', 'moves winner margin')):
 
 
 def main():
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     logger.info('SELF PLAY: Logging started')
 
     parser = argparse.ArgumentParser()
