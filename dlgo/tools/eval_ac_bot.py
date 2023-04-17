@@ -4,10 +4,10 @@ from collections import namedtuple
 
 from keras.models import load_model
 
-from ..rl.ac import ACAgent
-from .. import scoring
-from ..encoders.base import get_encoder_by_name
-from ..goboard_fast import GameState, Player
+from dlgo.rl.ac import ACAgent
+from dlgo import scoring
+from dlgo.encoders.base import get_encoder_by_name
+from dlgo.goboard_fast import GameState, Player
 
 BOARD_SIZE = 19
 
