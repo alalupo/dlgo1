@@ -9,10 +9,12 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
 from keras.models import Model, Sequential
+from keras.layers.core import Dense
 
 from dlgo.data.parallel_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.networks.func_networks import show_data_format, TrainerNetwork
+from dlgo.networks.network_types import SmallNetwork
 
 tf.get_logger().setLevel('WARNING')
 logging.config.fileConfig('log_confs/train_logging.conf')
@@ -106,6 +108,7 @@ class Trainer:
         self.num_classes = self.go_board_rows * self.go_board_cols
         self.model_dir = self.get_model_directory()
         self.model = self.build_model()
+        # self.model = self.build_old_school_model()
 
     @staticmethod
     def get_model_directory():
@@ -124,6 +127,15 @@ class Trainer:
         print(f'Model summary:')
         model.summary()
         print(f'*' * 80)
+        return model
+
+    # TODO: to be disposed
+    def build_old_school_model(self):
+        self.network = SmallNetwork(self.encoder.shape_for_others())
+        model = Sequential()
+        for layer in self.network.layers():
+            model.add(layer)
+        model.add(Dense(self.num_classes, activation='softmax'))
         return model
 
     def train_model(self, train_generator, test_generator, batch_size=128):

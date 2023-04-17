@@ -1,7 +1,7 @@
 import numpy as np
 
 from dlgo.encoders.base import Encoder
-from dlgo.goboard import Move
+from dlgo.goboard_fast import Move
 from dlgo.gotypes import Player, Point
 from dlgo.networks import network_types
 

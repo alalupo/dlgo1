@@ -91,10 +91,6 @@ class GoDataProcessor:
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir.joinpath(tar_file))
         name_list = zip_file.getnames()
-        # total_moves = self.num_total_moves(zip_file, game_list, name_list)
-        # logger.info(f'ZIP FILE NAME: {zip_file_name}, GAME LIST\'S LENGTH={len(game_list)}')
-        # logger.info(f'ZIP FILE NAME: {zip_file_name}, GAME_LIST={game_list}')
-        # logger.info(f'ZIP FILE NAME: {zip_file_name}, TOTAL MOVES: {total_moves}')
         shape = self.encoder.shape_for_others()
 
         for index in game_list:
@@ -103,12 +99,6 @@ class GoDataProcessor:
             feature_shape = tuple(np.insert(shape, 0, np.asarray([moves])))
             features = np.zeros(feature_shape)
             labels = np.zeros((moves,))
-            # logger.info(f'ZIP FILE NAME: {zip_file_name}, INDEX={index}')
-            # logger.info(f'ZIP FILE NAME: {zip_file_name}, INDEX MOVES: {moves}')
-            # logger.info(
-            #     f'ZIP FILE NAME: {zip_file_name}, INDEX={index}, FEATURES SIZE={round(features.nbytes / 1000000, 2)} MB')
-            # logger.info(
-            #     f'ZIP FILE NAME: {zip_file_name}, INDEX={index}, LABELS SIZE={round(labels.nbytes / 1000000, 2)} MB')
             name = name_list[index + 1]
             if not name.endswith('.sgf'):
                 logger.warning(f'NAME {name} IS NOT A VALID SGF')
