@@ -126,7 +126,6 @@ class Trainer:
         return model
 
     def train_model(self, train_generator, test_generator, batch_size=128):
-        K.clear_session()
         # train_generator, test_generator = self.get_datasets()
         encoder_name = self.encoder.name()
         network_name = self.network.name
