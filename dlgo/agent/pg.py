@@ -2,7 +2,7 @@
 import gc
 
 import numpy as np
-import tensorflow as tf
+import os
 from keras.optimizers import SGD
 
 from dlgo import goboard

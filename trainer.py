@@ -1,6 +1,7 @@
 import argparse
 import logging.config
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from pathlib import Path
 
 import keras.backend as K
@@ -53,7 +54,6 @@ def cleaning():
 
 
 def main():
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     cleaning()
     logger.info('TRAINER: STARTED')
     parser = argparse.ArgumentParser()
