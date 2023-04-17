@@ -1,7 +1,7 @@
 import argparse
 import logging.config
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from pathlib import Path
 
 import keras.backend as K
@@ -31,9 +31,8 @@ def show_intro():
     print(f'*' * 80)
 
 
-def first_training(trainer, batch_size):
+def first_training(trainer, batch_size, train_generator, test_generator):
     logger.info(f'FIRST TRAINING')
-    train_generator, test_generator = trainer.get_datasets()
     trainer.train_model(train_generator, test_generator, batch_size)
 
 
@@ -71,7 +70,7 @@ def main():
     network = TrainerNetwork(encoder=encoder)
 
     # optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
-    optimizer = tf.keras.optimizers.SGD()
+    optimizer = tf.keras.optimizers.Adagrad()
     loss_function = 'categorical_crossentropy'
     batch_size = 128
 
@@ -87,7 +86,8 @@ def main():
     logger.info(f'BATCH SIZE: {batch_size}')
 
     trainer = Trainer(network, encoder, num_games, epochs, optimizer, loss_function, board_size)
-    first_training(trainer, batch_size)
+    train_generator, test_generator = trainer.get_datasets()
+    first_training(trainer, batch_size, train_generator, test_generator)
     cleaning()
     logger.info('TRAINER: FINISHED')
 
