@@ -33,7 +33,7 @@ def create_bot(model_path, encoder):
 def main():
     logger.info('TRAINER AC: STARTED')
     parser = argparse.ArgumentParser()
-    parser.add_argument('--board_size', '-size', type=int, default=19, required=False)
+    parser.add_argument('--board-size', '-size', type=int, default=19, required=False)
     parser.add_argument('--learning-model', '-model', required=True)
     parser.add_argument('--model-out', '-out', required=True)
     parser.add_argument('--lr', type=float, default=0.0001)
