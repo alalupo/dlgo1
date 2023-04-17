@@ -74,7 +74,7 @@ class GoDataProcessor:
                                         data_type, num_samples))
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pnum = cores  # By default pnum = cores but can be set to 1 if no multiprocessing needed
+        pnum = 1  # By default pnum = cores but can be set to 1 if no multiprocessing needed
         print(f'The number of CPU: {cores}')
         print(f'The actual number of parallel processes: {pnum}')
         with get_context("spawn").Pool(processes=pnum, initializer=self.start_process) as pool:
@@ -153,14 +153,12 @@ class GoDataProcessor:
         print(f'')
         if data_type == 'train':
             GoDataProcessor.total_train_samples = num_samples
-            # GoDataProcessor.processed_train_samples += len(game_list)
-            GoDataProcessor.processed_train_samples += 1
+            GoDataProcessor.processed_train_samples += len(game_list)
             print(
                 f'TOTAL PROGRESS: {GoDataProcessor.processed_train_samples}/{GoDataProcessor.total_train_samples}')
         else:
             GoDataProcessor.total_test_samples = int(num_samples * self.test_ratio)
-            # GoDataProcessor.processed_test_samples += len(game_list)
-            GoDataProcessor.processed_test_samples += 1
+            GoDataProcessor.processed_test_samples += len(game_list)
             print(
                 f'TOTAL PROGRESS: {GoDataProcessor.processed_test_samples}/{GoDataProcessor.total_test_samples}')
 
