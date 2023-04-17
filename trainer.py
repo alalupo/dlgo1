@@ -13,6 +13,7 @@ from dlgo.data.parallel_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.networks.func_networks import show_data_format, TrainerNetwork
 
+tf.get_logger().setLevel('WARNING')
 logging.config.fileConfig('log_confs/train_logging.conf')
 logger = logging.getLogger('trainingLogger')
 

@@ -2,6 +2,7 @@ import tensorflow as tf
 from keras.layers import Conv2D, Dense, Activation, Dropout, Flatten, Input
 from keras.layers import ZeroPadding2D, MaxPooling2D, concatenate
 
+tf.get_logger().setLevel('WARNING')
 
 def show_data_format():
     print(f'Image data format: {tf.keras.backend.image_data_format()}')
