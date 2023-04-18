@@ -42,35 +42,6 @@ class TrainerNetwork:
         self.output = self.define_layers()
 
     def define_layers(self):
-        # conv1a = ZeroPadding2D((3, 3))(self.board_input)
-        # conv1b = Conv2D(64, (5, 5), activation='relu')(conv1a)
-        # conv1c = Activation('relu')(conv1b)
-        # conv1d = Dropout(rate=0.1)(conv1c)
-        #
-        # conv2a = ZeroPadding2D((2, 2))(conv1d)
-        # conv2b = Conv2D(64, (3, 3), activation='relu')(conv2a)
-        # conv2c = Dropout(rate=0.1)(conv2b)
-        #
-        # conv3a = ZeroPadding2D((2, 2))(conv2c)
-        # conv3b = Conv2D(48, (2, 2), activation='relu')(conv3a)
-        # conv3c = Activation('relu')(conv3b)
-        # conv3d = Dropout(rate=0.1)(conv3c)
-        #
-        # conv4a = ZeroPadding2D((2, 2))(conv3d)
-        # conv4b = Conv2D(48, (2, 2), activation='relu')(conv4a)
-        # conv4c = Activation('relu')(conv4b)
-        # conv4d = Dropout(rate=0.1)(conv4c)
-        #
-        # conv5a = ZeroPadding2D((2, 2))(conv4d)
-        # conv5b = Conv2D(48, (2, 2), activation='relu')(conv5a)
-        # conv5c = Activation('relu')(conv5b)
-        # conv5d = Dropout(rate=0.1)(conv5c)
-        #
-        # flat = Flatten()(conv5d)
-        # processed_board = Dense(512)(flat)
-        #
-        # output = Dense(self.num_classes, activation='softmax')(processed_board)
-
         starting = Dense(512, activation='relu')(self.board_input)
         conv1a = Conv2D(48,
                         kernel_size=(3, 3),

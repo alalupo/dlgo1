@@ -1,7 +1,6 @@
 from pathlib import Path
-import glob
-import numpy as np
 
+import numpy as np
 from keras.utils import to_categorical
 
 from dlgo.data.generator import DataGenerator
@@ -46,9 +45,6 @@ def create_npy():
     label_file = dir.joinpath(f'{data_file_name}_labels_1_1')
     np.save(str(feature_file), features)
     np.save(str(label_file), labels)
-    # base = dir.joinpath(data_file_name + '_features_*.npy')
-    # for feature_file in glob.glob(str(base)):
-    #     label_file = feature_file.replace('features', 'labels')
     x = np.load(str(feature_file) + '.npy')
     y = np.load(str(label_file) + '.npy')
     print(x.shape, y.shape)
@@ -69,7 +65,7 @@ def test_generator():
 
 
 def main():
-    create_npy()
+    test_generator()
 
 
 if __name__ == '__main__':

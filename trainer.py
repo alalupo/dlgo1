@@ -1,12 +1,13 @@
-import argparse
-import logging.config
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+import argparse
+import logging.config
 from pathlib import Path
 
-import keras.backend as K
 import matplotlib.pyplot as plt
 import tensorflow as tf
+keras = tf.keras
+import keras.backend as K
 from keras.callbacks import ModelCheckpoint
 from keras.models import Model, Sequential
 from keras.layers.core import Dense
