@@ -38,23 +38,6 @@ class DataGenerator:
         for zip_file_name in self.files:
             file_name = zip_file_name.replace('.tar.gz', '') + self.data_type
             base = self.data_directory.joinpath(file_name + '_features_*.npy')
-
-            # WITH NPY MERGING:
-            # arr_x = np.empty(shape=(0, 19, 19, 11))
-            # arr_y = np.empty(shape=(0,))
-            # for feature_file in glob.glob(str(base)):
-            #     x = np.load(feature_file)
-            #     arr_x = np.concatenate((arr_x, x))
-            #     label_file = feature_file.replace('features', 'labels')
-            #     y = np.load(label_file)
-            #     arr_y = np.concatenate((arr_y, y))
-            # arr_x = arr_x.astype('float32')
-            # arr_y = to_categorical(arr_y.astype(int), self.num_classes)
-            # while arr_x.shape[0] >= batch_size:
-            #     x_batch, arr_x = arr_x[:batch_size], arr_x[batch_size:]
-            #     y_batch, arr_y = arr_y[:batch_size], arr_y[batch_size:]
-            #     yield x_batch, y_batch
-
             for feature_file in glob.glob(str(base)):
                 label_file = feature_file.replace('features', 'labels')
                 x = np.load(feature_file)

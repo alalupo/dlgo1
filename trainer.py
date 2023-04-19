@@ -1,4 +1,5 @@
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import argparse
 import logging.config
@@ -6,6 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import tensorflow as tf
+
 keras = tf.keras
 import keras.backend as K
 from keras.callbacks import ModelCheckpoint
@@ -13,7 +15,7 @@ from keras.models import Model, Sequential
 from keras.layers.core import Dense
 
 # from dlgo.data.parallel_processor import GoDataProcessor
-from dlgo.data.data_processor import GoDataProcessor
+from dlgo.data.single_position_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.networks.func_networks import show_data_format, TrainerNetwork
 from dlgo.networks.network_types import SmallNetwork
@@ -110,7 +112,10 @@ class Trainer:
         self.num_classes = self.go_board_rows * self.go_board_cols
         self.model_dir = self.get_model_directory()
         self.model = self.build_model()
-        # self.model = self.build_old_school_model()
+        self.train_ids = None
+        self.test_ids = None
+        self.train_labels = None
+        self.test_labels = None
 
     @staticmethod
     def get_model_directory():
@@ -142,7 +147,6 @@ class Trainer:
         return model
 
     def train_model(self, train_generator, test_generator, batch_size=128):
-        # train_generator, test_generator = self.get_datasets()
         encoder_name = self.encoder.name()
         network_name = self.network.name
         print(f'>>>Model compiling...')
@@ -153,22 +157,15 @@ class Trainer:
         callback = ModelCheckpoint(self.model_dir + '/model_' + encoder_name + '_' + network_name + '_epoch_{epoch}.h5',
                                    save_weights_only=False,
                                    save_best_only=True)
-        train_steps = train_generator.get_num_samples(batch_size=batch_size) // batch_size
-        test_steps = test_generator.get_num_samples(batch_size=batch_size) // batch_size
-        logger.info(f'Train steps = {train_steps}')
-        logger.info(f'Test steps = {test_steps}')
+
         history = self.model.fit(
-            train_generator.generate(batch_size),
+            train_generator,
             shuffle=True,
             epochs=self.epochs,
-            steps_per_epoch=train_steps,
-            validation_data=test_generator.generate(batch_size),
-            validation_steps=test_steps,
+            validation_data=test_generator,
             callbacks=[callback])
         print(f'>>>Model evaluating...')
-        score = self.model.evaluate(
-            test_generator.generate(batch_size),
-            steps=test_steps)
+        score = self.model.evaluate(test_generator)
         print(f'*' * 80)
         logger.info(f'Test loss: {score[0]}')
         logger.info(f'Test accuracy: {score[1]}')
@@ -180,6 +177,12 @@ class Trainer:
         print(f'>>>Train generator loaded')
         test_generator = processor.load_go_data(num_samples=self.num_games, data_type='test')
         print(f'>>>Test generator loaded')
+        self.train_ids = processor.partition_train
+        self.test_ids = processor.partition_test
+        self.train_labels = processor.labels_train
+        self.test_labels = processor.labels_test
+        print(f'The length of train_ids: {len(self.train_ids)}')
+        print(f'The length of test_ids: {len(self.test_ids)}')
         return train_generator, test_generator
 
     def save_plots(self, history, model_dir, encoder_name, network_name):
