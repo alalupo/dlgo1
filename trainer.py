@@ -160,7 +160,7 @@ class Trainer:
 
         history = self.model.fit(
             train_generator,
-            shuffle=True,
+            use_multiprocessing=True,
             epochs=self.epochs,
             validation_data=test_generator,
             callbacks=[callback])
