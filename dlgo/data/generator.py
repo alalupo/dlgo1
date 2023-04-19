@@ -22,6 +22,7 @@ class DataGenerator:
                 self.num_samples += X.shape[0]
             return self.num_samples
 
+    # TODO: method created just for debugging -> to be removed at the end of the project
     def count_files(self):
         print(f'{len(self.files)} ZIP FILES IN GENERATOR')
         samples = 0
@@ -57,6 +58,7 @@ class DataGenerator:
             for feature_file in glob.glob(str(base)):
                 label_file = feature_file.replace('features', 'labels')
                 x = np.load(feature_file)
+                x = np.transpose(x, (0, 2, 3, 1))  # channels last
                 y = np.load(label_file)
                 x = x.astype('float32')
                 y = to_categorical(y.astype(int), self.num_classes)

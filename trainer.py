@@ -12,7 +12,8 @@ from keras.callbacks import ModelCheckpoint
 from keras.models import Model, Sequential
 from keras.layers.core import Dense
 
-from dlgo.data.parallel_processor import GoDataProcessor
+# from dlgo.data.parallel_processor import GoDataProcessor
+from dlgo.data.data_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.networks.func_networks import show_data_format, TrainerNetwork
 from dlgo.networks.network_types import SmallNetwork
@@ -69,7 +70,7 @@ def main():
     epochs = args.epochs
 
     encoder = get_encoder_by_name('simple', board_size=board_size)
-    input_shape = encoder.shape_for_others()
+    input_shape = encoder.shape()
     network = TrainerNetwork(encoder=encoder)
 
     # optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
@@ -83,7 +84,7 @@ def main():
     logger.info(f'BOARD SIZE: {board_size}')
     logger.info(f'ENCODER: {encoder.name()}')
     logger.info(f'NETWORK: {network.name}')
-    logger.info(f'INPUT SHAPE: {input_shape}')
+    logger.info(f'ENCODER\'S ORIGINAL SHAPE: {input_shape}')
     logger.info(f'OPTIMIZER: {optimizer}')
     logger.info(f'LOSS FUNCTION: {loss_function}')
     logger.info(f'BATCH SIZE: {batch_size}')
@@ -132,7 +133,8 @@ class Trainer:
 
     # TODO: to be disposed
     def build_old_school_model(self):
-        self.network = SmallNetwork(self.encoder.shape_for_others())
+        # self.network = SmallNetwork(self.encoder.shape_for_keras())
+        self.network = SmallNetwork(self.encoder.shape())
         model = Sequential()
         for layer in self.network.layers():
             model.add(layer)
@@ -157,6 +159,7 @@ class Trainer:
         logger.info(f'Test steps = {test_steps}')
         history = self.model.fit(
             train_generator.generate(batch_size),
+            shuffle=True,
             epochs=self.epochs,
             steps_per_epoch=train_steps,
             validation_data=test_generator.generate(batch_size),

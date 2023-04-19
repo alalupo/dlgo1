@@ -74,7 +74,7 @@ class GoDataProcessor:
                                         data_type, num_samples))
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pnum = 1  # By default pnum = cores but can be set to 1 if no multiprocessing needed
+        pnum = 1  # By default, pnum = cores but can be set to 1 if no multiprocessing needed
         print(f'The number of CPU: {cores}')
         print(f'The actual number of parallel processes: {pnum}')
         with get_context("spawn").Pool(processes=pnum, initializer=self.start_process) as pool:
@@ -91,7 +91,7 @@ class GoDataProcessor:
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir.joinpath(tar_file))
         name_list = zip_file.getnames()
-        shape = self.encoder.shape_for_others()
+        shape = self.encoder.shape_for_keras()
 
         for index in game_list:
             counter = 0
@@ -124,22 +124,26 @@ class GoDataProcessor:
                         counter += 1
                     game_state = game_state.apply_move(move)
                     first_move_done = True
-            chunk = 0
-            chunksize = 1024
-            for i in range(0, features.shape[0], chunksize):
-                feature_file = self.data_dir.joinpath(f'{data_file_name}_features_{index}_{chunk}')
-                label_file = self.data_dir.joinpath(f'{data_file_name}_labels_{index}_{chunk}')
-                chunk += 1
-                if (i + chunksize) > features.shape[0]:
-                    size = features.shape[0] - i
-                else:
-                    size = chunksize
-                current_features, features = features[:size], features[size:]
-                current_labels, labels = labels[:size], labels[size:]
-                np.save(feature_file, current_features)
-                np.save(label_file, current_labels)
+            feature_file = self.data_dir.joinpath(f'{data_file_name}_features_{index}')
+            label_file = self.data_dir.joinpath(f'{data_file_name}_labels_{index}')
+            np.save(feature_file, features)
+            np.save(label_file, labels)
+            # chunk = 0
+            # chunksize = 1024
+            # for i in range(0, features.shape[0], chunksize):
+            #     feature_file = self.data_dir.joinpath(f'{data_file_name}_features_{index}_{chunk}')
+            #     label_file = self.data_dir.joinpath(f'{data_file_name}_labels_{index}_{chunk}')
+            #     chunk += 1
+            #     if (i + chunksize) > features.shape[0]:
+            #         size = features.shape[0] - i
+            #     else:
+            #         size = chunksize
+            #     current_features, features = features[:size], features[size:]
+            #     current_labels, labels = labels[:size], labels[size:]
+            #     np.save(feature_file, current_features)
+            #     np.save(label_file, current_labels)
             self.progress_bar(game_list.index(index), len(game_list), 'games.')
-        self.progress_bar(len(game_list), len(game_list), 'games.')
+        self.progress_bar(len(game_list), len(game_list), 'games.') # to show 100%
         print(f'')
         if data_type == 'train':
             GoDataProcessor.total_train_samples = num_samples

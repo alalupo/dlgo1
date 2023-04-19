@@ -43,7 +43,8 @@ class SimpleEncoder(Encoder):
                     board_tensor[liberty_plane][r][c] = 1
 
         # transposing to adjust to channels_last tensorflow format
-        return np.transpose(board_tensor, (1, 2, 0))
+        # return np.transpose(board_tensor, (1, 2, 0))
+        return board_tensor
 
     def encode_point(self, point):
         """Turn a board point into an integer index."""
@@ -62,7 +63,7 @@ class SimpleEncoder(Encoder):
     def shape(self):
         return self.num_planes, self.board_width, self.board_height
 
-    def shape_for_others(self):
+    def shape_for_keras(self):
         # to adjust to channels_last tensorflow format
         return self.board_width, self.board_height, self.num_planes
 

@@ -12,7 +12,7 @@ def show_data_format():
 class AgentCriticNetwork:
     def __init__(self, encoder):
         self.encoder = encoder
-        self.board_input = Input(shape=encoder.shape_for_others(), name='board_input')
+        self.board_input = Input(shape=encoder.shape_for_keras(), name='board_input')
         self.policy_output, self.value_output = self.define_layers()
         self.name = 'agent-critic'
 
@@ -37,38 +37,32 @@ class TrainerNetwork:
     def __init__(self, encoder):
         self.encoder = encoder
         self.num_classes = self.encoder.num_points()
-        self.board_input = Input(shape=encoder.shape_for_others(), name='board_input')  # (None, 19, 19, 11)
+        self.board_input = Input(shape=encoder.shape_for_keras(), name='board_input')  # (None, 19, 19, 11)
         self.name = 'trainer'
         self.output = self.define_layers()
 
     def define_layers(self):
         starting = Dense(512, activation='relu')(self.board_input)
-        conv1a = Conv2D(48,
-                        kernel_size=(3, 3),
-                        activation='relu',
-                        padding='same')(starting)
-        conv1b = Dropout(rate=0.1)(conv1a)
+        net = Conv2D(48, (3, 3), activation='relu', padding='same')(starting)
+        net = Dropout(rate=0.1)(net)
 
-        conv2a = Conv2D(48, (3, 3),
-                        padding='same', activation='relu')(conv1b)
-        conv2b = MaxPooling2D(pool_size=(2, 2))(conv2a)
-        conv2c = Dropout(rate=0.1)(conv2b)
+        net = Conv2D(48, (3, 3), padding='same', activation='relu')(net)
+        net = MaxPooling2D(pool_size=(2, 2))(net)
+        net = Dropout(rate=0.1)(net)
 
-        conv3a = Conv2D(48, (3, 3),
-                        padding='same', activation='relu')(conv2c)
-        conv3b = MaxPooling2D(pool_size=(2, 2))(conv3a)
-        conv3c = Dropout(rate=0.1)(conv3b)
+        net = Conv2D(48, (3, 3), padding='same', activation='relu')(net)
+        net = MaxPooling2D(pool_size=(2, 2))(net)
+        net = Dropout(rate=0.1)(net)
 
-        conv4a = Conv2D(48, (3, 3),
-                        padding='same', activation='relu')(conv3c)
-        conv4b = MaxPooling2D(pool_size=(2, 2))(conv4a)
-        conv4c = Dropout(rate=0.1)(conv4b)
+        net = Conv2D(48, (3, 3), padding='same', activation='relu')(net)
+        net = MaxPooling2D(pool_size=(2, 2))(net)
+        net = Dropout(rate=0.1)(net)
 
-        conv5a = ZeroPadding2D((2, 2))(conv4c)
-        conv5b = Conv2D(48, (5, 5))(conv5a)
-        conv5c = Activation('relu')(conv5b)
+        net = ZeroPadding2D((2, 2))(net)
+        net = Conv2D(48, (5, 5))(net)
+        net = Activation('relu')(net)
 
-        flat = Flatten()(conv5c)
+        flat = Flatten()(net)
         output = Dense(self.num_classes, activation='softmax')(flat)
 
         return output
