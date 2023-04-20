@@ -42,25 +42,18 @@ class TrainerNetwork:
         self.output = self.define_layers()
 
     def define_layers(self):
-        starting = Dense(512, activation='relu')(self.board_input)
-        net = Conv2D(48, (3, 3), activation='relu', padding='same')(starting)
-        net = Dropout(rate=0.1)(net)
 
-        net = Conv2D(48, (3, 3), padding='same', activation='relu')(net)
-        net = MaxPooling2D(pool_size=(2, 2))(net)
-        net = Dropout(rate=0.1)(net)
+        net = ZeroPadding2D(padding=3)(self.board_input)
+        net = Conv2D(48, (7, 7), activation='relu')(net)
 
-        net = Conv2D(48, (3, 3), padding='same', activation='relu')(net)
-        net = MaxPooling2D(pool_size=(2, 2))(net)
-        net = Dropout(rate=0.1)(net)
+        net = ZeroPadding2D(padding=2)(net)
+        net = Conv2D(32, (5, 5), activation='relu')(net)
 
-        net = Conv2D(48, (3, 3), padding='same', activation='relu')(net)
-        net = MaxPooling2D(pool_size=(2, 2))(net)
-        net = Dropout(rate=0.1)(net)
+        net = ZeroPadding2D(padding=2)(net)
+        net = Conv2D(32, (5, 5), activation='relu')(net)
 
-        net = ZeroPadding2D((2, 2))(net)
-        net = Conv2D(48, (5, 5))(net)
-        net = Activation('relu')(net)
+        net = ZeroPadding2D(padding=2)(net)
+        net = Conv2D(32, (5, 5), activation='relu')(net)
 
         flat = Flatten()(net)
         output = Dense(self.num_classes, activation='softmax')(flat)

@@ -8,6 +8,9 @@ from dlgo.encoders.base import get_encoder_by_name
 from dlgo.goboard_fast import GameState, Move
 from dlgo.gosgf import Sgf_game
 from dlgo.gotypes import Point
+from dlgo.tools.board_decoder import BoardDecoder
+from dlgo.goboard_fast import Board
+from dlgo.gotypes import Player, Point
 
 
 def create_npy():
@@ -24,7 +27,18 @@ def create_npy():
     features = np.zeros(feature_shape)
     # labels = np.zeros((165,))
     labels = np.zeros((217,))
-    game_state, first_move_done = GameState.new_game(19), True
+
+    go_board = Board(19, 19)
+    first_move_done = False
+    move = None
+    game_state = GameState.new_game(19)
+    if sgf.get_handicap() is not None and sgf.get_handicap() != 0:
+        for setup in sgf.get_root().get_setup_stones():
+            for move in setup:
+                row, col = move
+                go_board.place_stone(Player.black, Point(row + 1, col + 1))  # black gets handicap
+        first_move_done = True
+        game_state = GameState(go_board, Player.white, None, move)
 
     for item in sgf.main_sequence_iter():
         color, move_tuple = item.get_move()
@@ -63,17 +77,23 @@ def test_generator():
     path = Path.cwd()
     dir = path / 'chosen_data'
     samples = [('KGS-2008-19-14002-.tar.gz', 9791), ('KGS-2007-19-11644-.tar.gz', 2756)]
+    # samples = [('KGS-2007-19-11644-.tar.gz', 2756), ('KGS-2008-19-14002-.tar.gz', 9791)]
     # games: 2008-07-01-4.sgf, 2007-07-28-25.sgf
     generator = DataGenerator(dir, samples, 19, 'train')
-    print(f'num samples = {generator.get_num_samples()}')
-    for item in generator.generate(128):
-        x, y = item
-        y_classes = [np.argmax(item, axis=None, out=None) for item in y]
-        print(y_classes[0])
+    gen = generator.generate(32)
+    x, y = next(gen)
+    pos = x[11]
+    decoder = BoardDecoder(pos)
+    decoder.print()
+    move = np.argmax(y[11], axis=None, out=None)
+    encoder = get_encoder_by_name('simple', 19)
+    point = encoder.decode_point_index(move)
+    print(move)
+    print(point)
 
 
 def main():
-    create_npy()
+    test_generator()
 
 
 if __name__ == '__main__':

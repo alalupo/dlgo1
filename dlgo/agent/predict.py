@@ -4,7 +4,6 @@ from dlgo.agent.base import Agent
 from dlgo.agent.helpers import is_point_an_eye
 from dlgo.encoders import base
 from dlgo import goboard_fast
-from dlgo import kerasutil
 
 
 class DeepLearningAgent(Agent):
@@ -42,28 +41,7 @@ class DeepLearningAgent(Agent):
             return goboard_fast.Move.pass_turn()
         return goboard_fast.Move.pass_turn()
 
-    def serialize(self, h5file):
-        h5file.create_group('encoder')
-        h5file['encoder'].attrs['name'] = self.encoder.name()
-        h5file['encoder'].attrs['board_width'] = self.encoder.board_width
-        h5file['encoder'].attrs['board_height'] = self.encoder.board_height
-        h5file.create_group('model')
-
-        kerasutil.save_model_to_hdf5_group(self.model, h5file)
-
     def diagnostics(self):
         return {'value': self.last_state_value}
 
 
-def load_prediction_agent(h5file):
-    model = kerasutil.load_model_from_hdf5_group(h5file)
-    # config = model.get_config()
-    # print(f'Printing config in load_prediction_agent: {config}')
-    encoder_name = h5file['encoder'].attrs['name']
-    if not isinstance(encoder_name, str):
-        encoder_name = encoder_name.decode('ascii')
-    board_width = h5file['encoder'].attrs['board_width']
-    board_height = h5file['encoder'].attrs['board_height']
-    encoder = base.get_encoder_by_name(
-        encoder_name, (board_width, board_height))
-    return DeepLearningAgent(model, encoder)

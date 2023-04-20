@@ -36,10 +36,6 @@ class GoDataProcessor:
     processed_train_samples = 0
     total_test_samples = 0
     processed_test_samples = 0
-    partition_train = np.array([])
-    partition_test = np.array([])
-    labels_train = np.array([])
-    labels_test = np.array([])
 
     def __init__(self, encoder='simple', board_size=19):
         self.encoder_string = encoder
@@ -95,36 +91,19 @@ class GoDataProcessor:
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir.joinpath(tar_file))
         name_list = zip_file.getnames()
-        # total_features = np.empty(shape=(0, self.board_size, self.board_size, self.encoder.num_planes))
-        total_features = np.empty(shape=(0, self.encoder.num_planes, self.board_size, self.board_size))
-        total_labels = np.empty(shape=(0,))
         for index in game_list:
             moves, sgf = self.unpack_game(zip_file, index, name_list)
             game_features, game_labels = self.encode_game(data_type, index, moves, sgf)
-            total_features, total_labels = self.handle_saving(total_features,
-                                                              total_labels,
-                                                              game_features,
-                                                              game_labels,
-                                                              data_file_name,
-                                                              index,
-                                                              game_list.index(index),
-                                                              len(game_list) - 1)
+            self.handle_saving(game_features, game_labels, data_file_name, index)
             self.progress_bar(game_list.index(index), len(game_list), 'games.')
         self.progress_bar(len(game_list), len(game_list), 'games.')  # to show 100%
         self.show_total_progress(data_type, num_samples, game_list)
 
-    def handle_saving(self, total_x, total_y, game_x, game_y, data_file_name, index, game_num, num_games):
-        total_x = np.concatenate((total_x, game_x))
-        total_y = np.concatenate((total_y, game_y))
-        total_x_size = round(total_x.nbytes / 1000000, 2)
-        if total_x_size > 1000 or game_num == num_games:
-            feature_path = self.data_dir.joinpath(f'{data_file_name}_features_{index}')
-            label_path = self.data_dir.joinpath(f'{data_file_name}_labels_{index}')
-            np.save(feature_path, total_x)
-            np.save(label_path, total_y)
-            total_x = np.empty(shape=(0, self.encoder.num_planes, self.board_size, self.board_size))
-            total_y = np.empty(shape=(0,))
-        return total_x, total_y
+    def handle_saving(self, features, labels, data_file_name, index):
+        feature_path = self.data_dir.joinpath(f'{data_file_name}_features_{index}')
+        label_path = self.data_dir.joinpath(f'{data_file_name}_labels_{index}')
+        np.save(feature_path, features)
+        np.save(label_path, labels)
 
     def unpack_game(self, zip_file, index, name_list):
         moves = self.num_moves_in_index(zip_file, index, name_list)
@@ -156,12 +135,6 @@ class GoDataProcessor:
                 if first_move_done and point is not None:
                     features[counter] = self.encoder.encode(game_state)
                     labels[counter] = self.encoder.encode_point(point)
-                    if data_type == 'train':
-                        GoDataProcessor.partition_train = np.append(GoDataProcessor.partition_train, f'{index}_{counter}_{color}')
-                        GoDataProcessor.labels_train = np.append(GoDataProcessor.labels_train, f'{index}_{counter}_{labels[counter]}')
-                    else:
-                        GoDataProcessor.partition_test = np.append(GoDataProcessor.partition_test, f'{index}_{counter}_{color}')
-                        GoDataProcessor.labels_test = np.append(GoDataProcessor.labels_test, f'{index}_{counter}_{labels[counter]}')
                     counter += 1
                 game_state = game_state.apply_move(move)
                 first_move_done = True
