@@ -34,9 +34,9 @@ def show_intro():
     print(f'*' * 80)
 
 
-def first_training(trainer, batch_size, train_generator, test_generator):
+def first_training(trainer, batch_size, train_generator, test_generator, num_games, epochs):
     logger.info(f'FIRST TRAINING')
-    trainer.train_model(train_generator, test_generator, batch_size)
+    trainer.train_model(train_generator, test_generator, batch_size, num_games, epochs)
 
 
 def next_training(trainer, batch_size):
@@ -90,7 +90,7 @@ def main():
 
     trainer = Trainer(network, encoder, num_games, epochs, optimizer, loss_function, board_size)
     train_generator, test_generator = trainer.get_datasets()
-    first_training(trainer, batch_size, train_generator, test_generator)
+    first_training(trainer, batch_size, train_generator, test_generator, num_games, epochs)
     cleaning()
     logger.info('TRAINER: FINISHED')
 
@@ -133,7 +133,7 @@ class Trainer:
         print(f'*' * 80)
         return model
 
-    def train_model(self, train_generator, test_generator, batch_size=128):
+    def train_model(self, train_generator, test_generator, batch_size, num_games, epochs):
         encoder_name = self.encoder.name()
         network_name = self.network.name
         print(f'>>>Model compiling...')
@@ -141,7 +141,13 @@ class Trainer:
                            loss=self.loss,
                            metrics=['accuracy'])
         print(f'>>>Model fitting...')
-        callback = ModelCheckpoint(self.model_dir + '/model_' + encoder_name + '_' + network_name + '_epoch_{epoch}.h5',
+        callback = ModelCheckpoint(self.model_dir +
+                                   '/model_' +
+                                   encoder_name + '_' +
+                                   network_name + '_' +
+                                   num_games + '_' +
+                                   epochs + '_' +
+                                   '_epoch{epoch}.h5',
                                    save_weights_only=False,
                                    save_best_only=True)
         train_steps = train_generator.get_num_samples(batch_size=batch_size) // batch_size
