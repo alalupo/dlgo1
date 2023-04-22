@@ -1,4 +1,4 @@
-from dlgo import goboard
+from dlgo.goboard_fast import Move
 from dlgo.agent.base import Agent
 from dlgo import scoring
 from dlgo.scoring import compute_game_result
@@ -57,9 +57,9 @@ class TerminationAgent(Agent):
         if self.strategy.should_pass(game_state):
             print(f'SHOULD PASS STRATEGY FIRED OFF')
             print(f'RESULT: {compute_game_result(game_state)}')
-            return goboard.Move.pass_turn()
+            return Move.pass_turn()
         elif self.strategy.should_resign(game_state):
-            return goboard.Move.resign()
+            return Move.resign()
         else:
             return self.agent.select_move(game_state)
 

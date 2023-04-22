@@ -12,12 +12,10 @@ keras = tf.keras
 import keras.backend as K
 from keras.callbacks import ModelCheckpoint
 from keras.models import Model, Sequential
-from keras.layers.core import Dense
 
 from dlgo.data.data_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.networks.func_networks import show_data_format, TrainerNetwork
-from dlgo.networks.network_types import SmallNetwork
 
 tf.get_logger().setLevel('WARNING')
 logging.config.fileConfig('log_confs/train_logging.conf')

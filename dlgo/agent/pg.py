@@ -3,7 +3,7 @@
 import numpy as np
 from keras.optimizers import SGD
 
-from dlgo import goboard
+from dlgo.goboard_fast import Move
 from dlgo.agent.base import Agent
 from dlgo.agent.helpers import is_point_an_eye
 
@@ -68,14 +68,14 @@ class PolicyAgent(Agent):
             candidates, num_moves, replace=False, p=move_probs)
         for point_idx in ranked_moves:
             point = self._encoder.decode_point_index(point_idx)
-            if not game_state.is_valid_move(goboard.Move.play(point)):
+            if not game_state.is_valid_move(Move.play(point)):
                 continue
             if not is_point_an_eye(game_state.board, point, game_state.next_player):
                 if self._collector is not None:
                     self._collector.record_decision(state=board_tensor, action=point_idx)
-                    return goboard.Move.play(point)
+                    return Move.play(point)
         # No legal, non-self-destructive moves less.
-        return goboard.Move.pass_turn()
+        return Move.pass_turn()
 
     # def serialize(self, h5file):
     #     h5file.create_group('encoder')

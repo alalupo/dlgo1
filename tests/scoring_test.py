@@ -1,7 +1,7 @@
 import unittest
 
 from dlgo import scoring
-from dlgo.goboard import Board
+from dlgo.goboard_fast import Board
 from dlgo.gotypes import Player, Point
 
 

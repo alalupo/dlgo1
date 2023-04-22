@@ -74,7 +74,7 @@ class GoDataProcessor:
                                         data_type, num_samples))
 
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pnum = 1  # By default, pnum = cores but can be set to 1 if no multiprocessing needed
+        pnum = cores  # By default, pnum = cores but can be set to 1 if no multiprocessing needed
         print(f'The number of CPU: {cores}')
         print(f'The actual number of parallel processes: {pnum}')
         with get_context("spawn").Pool(processes=pnum, initializer=self.start_process) as pool:

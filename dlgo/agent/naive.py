@@ -2,7 +2,7 @@ import random
 import numpy as np
 from dlgo.agent.base import Agent
 from dlgo.agent.helpers import is_point_an_eye
-from dlgo.goboard import Move
+from dlgo.goboard_fast import Move
 from dlgo.gotypes import Point
 
 __all__ = ['FastRandomBot']

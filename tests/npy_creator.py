@@ -1,7 +1,14 @@
 from pathlib import Path
+import h5py
 
 import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+keras = tf.keras
 from keras.utils import to_categorical
+from keras.models import load_model
+from keras.metrics import Precision
+from sklearn.metrics import precision_score
 
 from dlgo.data.generator import DataGenerator
 from dlgo.encoders.base import get_encoder_by_name
@@ -75,6 +82,10 @@ def create_npy():
 
 def test_generator():
     path = Path.cwd()
+    project_dir = path.parent
+    model_dir = project_dir / 'models'
+    model_path = model_dir / 'model_simple_trainer_epoch_5.h5'
+    model = get_model(model_path)
     dir = path / 'chosen_data'
     samples = [('KGS-2008-19-14002-.tar.gz', 9791), ('KGS-2007-19-11644-.tar.gz', 2756)]
     # samples = [('KGS-2007-19-11644-.tar.gz', 2756), ('KGS-2008-19-14002-.tar.gz', 9791)]
@@ -83,14 +94,57 @@ def test_generator():
     gen = generator.generate(32)
     x, y = next(gen)
     pos = x[11]
+    move = np.argmax(y[11], axis=None, out=None)
+
+    # 1. Visualize the position
     decoder = BoardDecoder(pos)
     decoder.print()
-    move = np.argmax(y[11], axis=None, out=None)
     encoder = get_encoder_by_name('simple', 19)
     point = encoder.decode_point_index(move)
     print(move)
     print(point)
+    print(f'')
 
+    # 2. Visualize data distribution in labels
+    classes = np.argmax(y, axis=1)
+    classes_lst = classes.tolist()
+    # Calculate the frequency of each label in the training and test datasets
+    train_label_freq = [classes_lst.count(label) for label in range(361)]
+    # Plot the frequency of each label
+    fig, ax = plt.subplots()
+    ax.bar(range(361), train_label_freq, label='Train')
+    ax.legend()
+    ax.set_xlabel('Label')
+    ax.set_ylabel('Frequency')
+    ax.set_title('Label Frequency')
+    plt.show()
+
+    # 3. Predict on the test data
+    pos = np.expand_dims(pos, axis=0)  # add batch dimension
+    y_pred = model.predict([np.array(pos)])
+    # Convert the predicted values to binary (0 or 1)
+    y_pred_int = np.argmax(y_pred)
+    y_pred_binary = np.round(y_pred_int)
+    precision = precision_score([move], [y_pred_binary], average='micro')
+    print(f'Precision: {precision}')
+    print(f'')
+
+    # 4. Compare what was actually played with what was predicted:
+    point2 = encoder.decode_point_index(y_pred_binary)
+    print(f'Move actually played: {point} (label: {move})')
+    print(f' vs ')
+    print(f'Move predicted: {point2} (label: {y_pred_binary})')
+
+
+
+def get_model(model_path):
+    with h5py.File(model_path, "r") as model_file:
+        model = load_model(model_file)
+        optimizer = tf.keras.optimizers.Adagrad()
+        model.compile(optimizer=optimizer,
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy', Precision()])
+    return model
 
 def main():
     test_generator()

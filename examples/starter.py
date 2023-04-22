@@ -51,7 +51,8 @@ class Starter:
             model_file.close()
         with h5py.File(self.model_path, "r") as model_file:
             model = load_model(model_file)
-            model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+            optimizer = tf.keras.optimizers.Adagrad()
+            model.compile(optimizer=optimizer,
                           loss='categorical_crossentropy',
                           metrics=['accuracy'])
         return model

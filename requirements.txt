@@ -53,3 +53,6 @@ typing_extensions==4.5.0
 urllib3==1.26.15
 Werkzeug==2.2.3
 wrapt==1.14.1
+
+dlgo~=0.1
+setuptools~=67.1.0
