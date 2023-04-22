@@ -145,8 +145,8 @@ class Trainer:
                                    '/model_' +
                                    encoder_name + '_' +
                                    network_name + '_' +
-                                   num_games + '_' +
-                                   epochs + '_' +
+                                   str(num_games) + '_' +
+                                   str(epochs) + '_' +
                                    '_epoch{epoch}.h5',
                                    save_weights_only=False,
                                    save_best_only=True)

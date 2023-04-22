@@ -1,6 +1,9 @@
 """Policy gradient learning."""
 
 import numpy as np
+import tensorflow as tf
+keras = tf.keras
+from keras.models import load_model
 from keras.optimizers import SGD
 
 from dlgo.goboard_fast import Move
@@ -47,15 +50,23 @@ class PolicyAgent(Agent):
     def set_collector(self, collector):
         self._collector = collector
 
+    def predict_move(self, game_state):
+        board_tensor = self._encoder.encode(game_state)
+        board_tensor = np.transpose(board_tensor, (1, 2, 0))
+        X = np.array([board_tensor])
+        move_probs = self._model.predict([X])[0][0]
+        return move_probs
+
     def select_move(self, game_state):
         num_moves = self._encoder.board_width * self._encoder.board_height
-        board_tensor = self._encoder.encode(game_state)
-        X = np.array([board_tensor])
+        # board_tensor = self._encoder.encode(game_state)
+        # X = np.array([board_tensor])
         if np.random.random() < self._temperature:
             # Explore random moves.
             move_probs = np.ones(num_moves) / num_moves
         else:
-            move_probs = self._model.predict_on_batch(X)[0][0]
+            # move_probs = self._model.predict_on_batch(X)[0][0]
+            move_probs = self.predict_move(game_state)
         # Prevent move probs from getting stuck at 0 or 1.
         eps = 1e-5
         move_probs = np.clip(move_probs, eps, 1 - eps)
@@ -77,14 +88,6 @@ class PolicyAgent(Agent):
         # No legal, non-self-destructive moves less.
         return Move.pass_turn()
 
-    # def serialize(self, h5file):
-    #     h5file.create_group('encoder')
-    #     h5file['encoder'].attrs['name'] = self._encoder.name()
-    #     h5file['encoder'].attrs['board_width'] = self._encoder.board_width
-    #     h5file['encoder'].attrs['board_height'] = self._encoder.board_height
-    #     h5file.create_group('model')
-    #     kerasutil.save_model_to_hdf5_group(self._model, h5file['model'])
-
     def train(self, experience, lr, clipnorm, batch_size):
         self._model.compile(
             loss='categorical_crossentropy',
@@ -99,15 +102,3 @@ class PolicyAgent(Agent):
             experience.states, target_vectors,
             batch_size=batch_size,
             epochs=1)
-
-# def load_policy_agent(h5file):
-#     model = kerasutil.load_model_from_hdf5_group(h5file['model'])
-#     encoder_name = h5file['encoder'].attrs['name']
-#     if not isinstance(encoder_name, str):
-#         encoder_name = encoder_name.decode('ascii')
-#     board_width = h5file['encoder'].attrs['board_width']
-#     board_height = h5file['encoder'].attrs['board_height']
-#     encoder = get_encoder_by_name(
-#         encoder_name,
-#         (board_width, board_height))
-#     return PolicyAgent(model, encoder)

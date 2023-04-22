@@ -1,11 +1,14 @@
 import argparse
 import logging.config
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from collections import namedtuple
 
 import h5py
+import tensorflow as tf
+keras = tf.keras
 from keras.models import load_model
+from keras.optimizers import SGD
 
 from dlgo import rl
 from dlgo import scoring
@@ -25,11 +28,10 @@ class GameRecord(namedtuple('GameRecord', 'moves winner margin')):
 
 
 def main():
-
     logger.info('SELF PLAY: Logging started')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--board-size', '-bs', type=int, required=True)
+    parser.add_argument('--board-size', '-size', type=int, required=True)
     parser.add_argument('--learning-model', '-model', required=True)
     parser.add_argument('--num-games', '-n', type=int, default=10)
 
@@ -52,24 +54,29 @@ class SelfPlayer:
         self.board_size = board_size
         self.rows, self.cols = self.board_size, self.board_size
         self.encoder = get_encoder_by_name('simple', self.board_size)
-        self.model_name = model
+        self.model_path = self.get_model_path(model)
         self.num_games = num_games
-        self.exp_name = self.get_exp_name()
+        self.exp_name = self.get_exp_name(model)
         self.exp_path = self.get_exp_path()
         logger.info(f'=== NEW SelfPlay OBJECT CREATED ===')
         logger.info(f'ENCODER: {self.encoder.name()}')
 
-    def get_exp_name(self):
+    @staticmethod
+    def get_model_path(model):
         finder = FileFinder()
-        return finder.get_new_prefix_name_from_model(self.model_name, 'exp_')
+        return finder.get_model_full_path(model)
+
+    def get_exp_name(self, model):
+        finder = FileFinder()
+        name = finder.get_new_prefix_name_from_model(model, 'exp_')
+        return f'{name}_{self.board_size}_{self.num_games}'
 
     def get_exp_path(self):
         finder = FileFinder()
         return finder.get_exp_full_path(self.exp_name)
 
     def play(self):
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-        print(f'>>>Creating two bots from {self.model_name}')
+        print(f'>>>Creating two bots from the model: {self.model_path}')
         agent1 = self.create_bot(1)
         agent2 = self.create_bot(2)
         collector1 = rl.EpisodeExperienceCollector(self.exp_path, self.board_size, self.encoder.num_planes)
@@ -78,18 +85,18 @@ class SelfPlayer:
         agent2.set_collector(collector2)
 
         for i in range(self.num_games):
-            print('Simulating game %d/%d...' % (i + 1, self.num_games))
+            print(f'Simulating game {i+1}/{self.num_games}...')
             collector1.begin_episode()
             collector2.begin_episode()
             game_record = self.simulate_game(agent1, agent2, self.board_size)
-            print(f'>>>Completing episodes...')
+            print(f'Game {i+1} is over. Saving the episode...')
             if game_record.winner == Player.black:
                 collector1.complete_episode(reward=1)
                 collector2.complete_episode(reward=-1)
             else:
                 collector2.complete_episode(reward=1)
                 collector1.complete_episode(reward=-1)
-        print(f'>>> Done')
+        print(f'>>> {self.num_games} games completed.')
 
     def create_bot(self, number):
         print(f'>>>Creating bot {number}...')
@@ -97,15 +104,16 @@ class SelfPlayer:
         return PolicyAgent(model, self.encoder)
 
     def get_model(self):
-        finder = FileFinder()
-        path = finder.find_model(self.model_name)
         model_file = None
         try:
-            model_file = open(path, 'r')
+            model_file = open(self.model_path, 'r')
         finally:
             model_file.close()
-        with h5py.File(path, "r") as model_file:
+        with h5py.File(self.model_path, "r") as model_file:
             model = load_model(model_file)
+            model.compile(
+                loss='categorical_crossentropy',
+                optimizer=SGD(learning_rate=0.0001, clipnorm=1.0))
         return model
 
     @staticmethod

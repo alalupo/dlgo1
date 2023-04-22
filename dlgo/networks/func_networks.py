@@ -16,7 +16,7 @@ class AgentCriticNetwork:
         self.encoder = encoder
         self.board_input = Input(shape=encoder.shape_for_keras(), name='board_input')
         self.policy_output, self.value_output = self.define_layers()
-        self.name = 'agent-critic'
+        self.name = 'agent_critic'
 
     def define_layers(self):
         conv1a = ZeroPadding2D((2, 2))(self.board_input)

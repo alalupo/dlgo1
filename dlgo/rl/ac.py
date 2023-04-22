@@ -1,13 +1,20 @@
+import logging.config
+
 import numpy as np
+import tensorflow as tf
+keras = tf.keras
 from keras.optimizers import SGD
 
-from dlgo import goboard
+from dlgo.goboard_fast import Move
 from dlgo.agent.base import Agent
 from dlgo.agent.helpers import is_point_an_eye
 
 __all__ = [
     'ACAgent'
 ]
+
+logging.config.fileConfig('log_confs/ac_train_logging.conf')
+logger = logging.getLogger('acTrainingLogger')
 
 
 class ACAgent(Agent):
@@ -50,7 +57,7 @@ class ACAgent(Agent):
             candidates, num_moves, replace=False, p=move_probs)
         for point_idx in ranked_moves:
             point = self.encoder.decode_point_index(point_idx)
-            if not game_state.is_valid_move(goboard.Move.play(point)):
+            if not game_state.is_valid_move(Move.play(point)):
                 continue
             if not is_point_an_eye(game_state.board, point, game_state.next_player):
                 if self.collector is not None:
@@ -59,9 +66,9 @@ class ACAgent(Agent):
                         action=point_idx,
                         estimated_value=estimated_value
                     )
-                return goboard.Move.play(point)
+                return Move.play(point)
         # No legal, non-self-destructive moves less.
-        return goboard.Move.pass_turn()
+        return Move.pass_turn()
 
     def train(self, experience, lr=0.1, batch_size=128):
         opt = SGD(lr=lr, clipvalue=0.2)
@@ -72,7 +79,7 @@ class ACAgent(Agent):
         self.model.fit(
             experience.next(),
             batch_size=batch_size,
-            epochs=1
+            epochs=10
         )
 
     def diagnostics(self):
