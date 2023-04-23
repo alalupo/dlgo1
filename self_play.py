@@ -14,7 +14,7 @@ from keras.models import load_model
 
 from dlgo.rl.experience import EpisodeExperienceCollector
 from dlgo import scoring
-from dlgo.agent.pg import PolicyAgent
+from dlgo.rl.ac import ACAgent
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.goboard_fast import GameState
 from dlgo.gotypes import Player
@@ -61,13 +61,6 @@ class SelfPlayer:
         self.exp_name = self.get_exp_name(model, f'exp_{num_games}_')
         self.exp_path = self.get_exp_path(self.exp_name)
         self.cleaning(self.exp_path)
-        # self.exp_name_agent1 = self.get_exp_name(model, f'exp_agent1_{num_games}_')
-        # self.exp_name_agent2 = self.get_exp_name(model, f'exp_agent2_{num_games}_')
-        # self.exp_path_agent1 = self.get_exp_path(self.exp_name_agent1)
-        # self.exp_path_agent2 = self.get_exp_path(self.exp_name_agent2)
-        # self.cleaning(self.exp_path_agent1)
-        # self.cleaning(self.exp_path_agent2)
-
         logger.info(f'=== NEW SelfPlay OBJECT CREATED ===')
         logger.info(f'ENCODER: {self.encoder.name()}')
 
@@ -117,7 +110,7 @@ class SelfPlayer:
     def create_bot(self, number):
         print(f'>>>Creating bot {number}...')
         model = self.get_model()
-        return PolicyAgent(model, self.encoder)
+        return ACAgent(model, self.encoder)
 
     def get_model(self):
         model_file = None
