@@ -144,6 +144,7 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
         board_size = 9
 
         with h5py.File(exp_path, 'r') as f:
+            # two equivalent methods for acquiring the volume of the experience file
             num_states = len(f['experience/states'])
             num_states2 = f['experience']['states'].shape[0]
             print(f"There are {num_states} or {num_states2} 'states' elements in the exp1 file.")
@@ -162,9 +163,9 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
                 break
             print(
                 f'Batch {i}: states shape={states.shape}, policy target shape={targets[0].shape}, value target shape={targets[1].shape}')
-            for item in range(32):
-                if item == 0:
-                    print(f'Dtypes: {states[item].dtype}, {targets[0][item].dtype}, {targets[1][item].dtype}')
+            # for item in range(32):
+            #     if item == 0:
+            #         print(f'Dtypes: {states[item].dtype}, {targets[0][item].dtype}, {targets[1][item].dtype}')
             for item in range(32):
                 # if item == 0:
                 print(f'ITEM: {item}')
@@ -177,11 +178,10 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
                 # print(move)
                 print(point)
                 print(f'')
-                # print(f'VALUE TARGET: {np.argmax(targets[1])}')
-                # print(f'')
-                # decoder = BoardDecoder(states[item + 1])
-                # decoder.print()
-                # print(f'')
+                print(f'POLICY TARGET (THE ACTOR):')
+                print(f'{targets[0][item]}')
+                print(f'VALUE TARGET (THE CRITIC):')
+                print(f'{targets[1][item]}')
 
     def unlink_file(self, file):
         if Path(file).is_file():

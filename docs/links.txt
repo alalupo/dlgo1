@@ -3,3 +3,7 @@ https://github.com/maxpumperla/deep_learning_and_the_game_of_go/issues/80#issuec
 
 Multiprocessing:
 https://github.com/maxpumperla/deep_learning_and_the_game_of_go/issues/63#issuecomment-616440072
+
+Adding a new bot to the server:
+https://github.com/maxpumperla/deep_learning_and_the_game_of_go/issues/64#issuecomment-616363047
+

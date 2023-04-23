@@ -48,7 +48,7 @@ def main():
 
 
 class ACTrainer:
-    def __init__(self, board_size, model_in, model_out, learning_rate, batch_size, *exp_files):
+    def __init__(self, board_size, model_in, model_out, learning_rate, batch_size, exp_files):
         self.board_size = board_size
         self.rows, self.cols = self.board_size, self.board_size
         self.encoder = get_encoder_by_name('simple', self.board_size)
@@ -90,9 +90,9 @@ class ACTrainer:
                 lr=self.learning_rate,
                 batch_size=self.batch_size)
         print(f'>>>New model is getting saved.')
-        save_model(model=learning_agent.model, filepath=self.model_out_path, save_format='h5')
-        # with h5py.File(self.model_out_path, 'w') as model_outf:
-        #     save_model(model=learning_agent.model, filepath=self.model_out_path, save_format='h5')
+        # save_model(model=learning_agent.model, filepath=self.model_out_path, save_format='h5')
+        with h5py.File(self.model_out_path, 'w') as model_outf:
+            save_model(model=learning_agent.model, filepath=model_outf, save_format='h5')
         # learning_agent.model.save(self.model_out_path, save_format='h5')
 
     def create_bot(self, model_path):

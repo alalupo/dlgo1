@@ -57,11 +57,11 @@ class Initiator:
     def create_model(self):
         model = Model(inputs=self.network.board_input,
                       outputs=[self.network.policy_output, self.network.value_output])
-        optimizer = SGD(learning_rate=self.learning_rate, clipnorm=1.0)
-        logger.info(f'OPTIMIZER: {optimizer}')
+        opt = SGD(learning_rate=0.0001, clipvalue=0.2)
         model.compile(
-            loss='categorical_crossentropy',
-            optimizer=optimizer)
+            optimizer=opt,
+            loss=['categorical_crossentropy', 'mse'],
+            loss_weights=[1.0, 0.5])
 
         with h5py.File(self.model_out_path, 'w') as outf:
             save_model(filepath=outf, model=model, save_format='h5')

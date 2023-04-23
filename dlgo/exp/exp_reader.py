@@ -43,16 +43,12 @@ class ExpGenerator:
                 batch_indices = indices[i * self.batch_size:(i + 1) * self.batch_size]
                 states = f['experience/states'][batch_indices]
                 states = states.astype('float32')
-                policy_target = np.zeros((self.batch_size, self.num_moves), dtype='int32')
-                value_target = np.zeros((self.batch_size,), dtype='int32')
+                policy_target = np.zeros((self.batch_size, self.num_moves), dtype='float32')
+                value_target = np.zeros((self.batch_size,), dtype='float32')
                 for j, idx in enumerate(batch_indices):
                     action = f['experience/actions'][idx]
-                    # action = to_categorical(action.astype(int), self.num_classes)
-                    action = action.astype('int32')
                     reward = f['experience/rewards'][idx]
-                    reward = reward.astype('int32')
                     advantage = f['experience/advantages'][idx]
-                    advantage = advantage.astype('int32')
                     policy_target[j][action] = advantage
                     value_target[j] = reward
                 targets = [policy_target, value_target]

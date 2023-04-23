@@ -87,7 +87,7 @@ class ACAgent(Agent):
             steps_per_epoch=len(experience),
             batch_size=batch_size,
             verbose=1,
-            epochs=20,
+            epochs=5,
         )
 
         # print(f'Model name: {self.model.name}')
