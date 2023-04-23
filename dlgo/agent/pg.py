@@ -9,6 +9,7 @@ from keras.optimizers import SGD
 from dlgo.goboard_fast import Move
 from dlgo.agent.base import Agent
 from dlgo.agent.helpers import is_point_an_eye
+# from dlgo.tools.board_decoder import BoardDecoder
 
 __all__ = [
     'PolicyAgent'
@@ -50,23 +51,19 @@ class PolicyAgent(Agent):
     def set_collector(self, collector):
         self._collector = collector
 
-    def predict_move(self, game_state):
-        board_tensor = self._encoder.encode(game_state)
-        board_tensor = np.transpose(board_tensor, (1, 2, 0))
+    def predict_move(self, game_state, board_tensor):
         X = np.array([board_tensor])
-        move_probs = self._model.predict([X])[0][0]
-        return move_probs
+        return self._model.predict([X], verbose=0)[0][0]
 
     def select_move(self, game_state):
         num_moves = self._encoder.board_width * self._encoder.board_height
-        # board_tensor = self._encoder.encode(game_state)
-        # X = np.array([board_tensor])
+        board_tensor = self._encoder.encode(game_state)
+        board_tensor = np.transpose(board_tensor, (1, 2, 0))
         if np.random.random() < self._temperature:
             # Explore random moves.
             move_probs = np.ones(num_moves) / num_moves
         else:
-            # move_probs = self._model.predict_on_batch(X)[0][0]
-            move_probs = self.predict_move(game_state)
+            move_probs = self.predict_move(game_state, board_tensor)
         # Prevent move probs from getting stuck at 0 or 1.
         eps = 1e-5
         move_probs = np.clip(move_probs, eps, 1 - eps)
@@ -84,6 +81,10 @@ class PolicyAgent(Agent):
             if not is_point_an_eye(game_state.board, point, game_state.next_player):
                 if self._collector is not None:
                     self._collector.record_decision(state=board_tensor, action=point_idx)
+                    # decoder = BoardDecoder(board_tensor)
+                    # decoder.print()
+                    # print(f'')
+                    # print(f'point_idx: {self._encoder.decode_point_index(point_idx)}')
                     return Move.play(point)
         # No legal, non-self-destructive moves less.
         return Move.pass_turn()

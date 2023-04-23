@@ -1,3 +1,4 @@
+from pathlib import Path
 import logging
 
 import h5py
@@ -16,6 +17,12 @@ class EpisodeExperienceCollector(object):
         self._current_episode_states = []
         self._current_episode_actions = []
         self._current_episode_estimated_values = []
+        self.cleaning()
+
+    def cleaning(self):
+        exp_file = Path(self.str_h5file)
+        if Path(exp_file).is_file():
+            Path.unlink(exp_file)
 
     def __len__(self):
         with h5py.File(self.str_h5file, "r") as f:
@@ -71,6 +78,7 @@ class EpisodeExperienceCollector(object):
                                                                     self._current_episode_actions,
                                                                     rewards,
                                                                     advantages)
+        # states = np.transpose(states, (0, 2, 3, 1))
         self._current_episode_states = []
         self._current_episode_actions = []
         self._current_episode_estimated_values = []
@@ -94,7 +102,6 @@ class EpisodeExperienceCollector(object):
             h5file.create_group('experience')
             h5file['experience'].create_dataset(
                 name='states',
-                shape=states.shape,
                 data=states,
                 maxshape=(None, self.board_size, self.board_size, self.num_planes))
             h5file['experience'].create_dataset(name='actions', data=actions, maxshape=(None,))

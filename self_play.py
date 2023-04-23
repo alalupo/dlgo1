@@ -1,16 +1,18 @@
 import argparse
 import logging.config
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+from pathlib import Path
 from collections import namedtuple
 
 import h5py
 import tensorflow as tf
+
 keras = tf.keras
 from keras.models import load_model
-from keras.optimizers import SGD
 
-from dlgo import rl
+from dlgo.rl.experience import EpisodeExperienceCollector
 from dlgo import scoring
 from dlgo.agent.pg import PolicyAgent
 from dlgo.encoders.base import get_encoder_by_name
@@ -18,8 +20,8 @@ from dlgo.goboard_fast import GameState
 from dlgo.gotypes import Player
 from dlgo.tools.file_finder import FileFinder
 from dlgo.utils import print_board
+from dlgo.gosgf import Sgf_game
 
-logging.config.fileConfig('log_confs/selfplay_logging.conf')
 logger = logging.getLogger('selfplayLogger')
 
 
@@ -56,8 +58,16 @@ class SelfPlayer:
         self.encoder = get_encoder_by_name('simple', self.board_size)
         self.model_path = self.get_model_path(model)
         self.num_games = num_games
-        self.exp_name = self.get_exp_name(model)
-        self.exp_path = self.get_exp_path()
+        self.exp_name = self.get_exp_name(model, f'exp_{num_games}_')
+        self.exp_path = self.get_exp_path(self.exp_name)
+        self.cleaning(self.exp_path)
+        # self.exp_name_agent1 = self.get_exp_name(model, f'exp_agent1_{num_games}_')
+        # self.exp_name_agent2 = self.get_exp_name(model, f'exp_agent2_{num_games}_')
+        # self.exp_path_agent1 = self.get_exp_path(self.exp_name_agent1)
+        # self.exp_path_agent2 = self.get_exp_path(self.exp_name_agent2)
+        # self.cleaning(self.exp_path_agent1)
+        # self.cleaning(self.exp_path_agent2)
+
         logger.info(f'=== NEW SelfPlay OBJECT CREATED ===')
         logger.info(f'ENCODER: {self.encoder.name()}')
 
@@ -66,30 +76,36 @@ class SelfPlayer:
         finder = FileFinder()
         return finder.get_model_full_path(model)
 
-    def get_exp_name(self, model):
+    @staticmethod
+    def get_exp_name(model, prefix):
         finder = FileFinder()
-        name = finder.get_new_prefix_name_from_model(model, 'exp_')
-        return f'{name}_{self.board_size}_{self.num_games}'
+        return finder.get_new_prefix_name_from_model(model, prefix)
 
-    def get_exp_path(self):
+    @staticmethod
+    def get_exp_path(name):
         finder = FileFinder()
-        return finder.get_exp_full_path(self.exp_name)
+        return finder.get_exp_full_path(name)
+
+    @staticmethod
+    def cleaning(file):
+        if Path(file).is_file():
+            Path.unlink(file)
 
     def play(self):
         print(f'>>>Creating two bots from the model: {self.model_path}')
         agent1 = self.create_bot(1)
         agent2 = self.create_bot(2)
-        collector1 = rl.EpisodeExperienceCollector(self.exp_path, self.board_size, self.encoder.num_planes)
-        collector2 = rl.EpisodeExperienceCollector(self.exp_path, self.board_size, self.encoder.num_planes)
+        collector1 = EpisodeExperienceCollector(self.exp_path, self.board_size, self.encoder.num_planes)
+        collector2 = EpisodeExperienceCollector(self.exp_path, self.board_size, self.encoder.num_planes)
         agent1.set_collector(collector1)
         agent2.set_collector(collector2)
 
         for i in range(self.num_games):
-            print(f'Simulating game {i+1}/{self.num_games}...')
+            print(f'Simulating game {i + 1}/{self.num_games}...')
             collector1.begin_episode()
             collector2.begin_episode()
-            game_record = self.simulate_game(agent1, agent2, self.board_size)
-            print(f'Game {i+1} is over. Saving the episode...')
+            game_record = self.simulate_game(agent1, agent2, self.board_size, i)
+            print(f'Game {i + 1} is over. Saving the episode...')
             if game_record.winner == Player.black:
                 collector1.complete_episode(reward=1)
                 collector2.complete_episode(reward=-1)
@@ -111,13 +127,12 @@ class SelfPlayer:
             model_file.close()
         with h5py.File(self.model_path, "r") as model_file:
             model = load_model(model_file)
-            model.compile(
-                loss='categorical_crossentropy',
-                optimizer=SGD(learning_rate=0.0001, clipnorm=1.0))
-        return model
+            # model.compile(
+            #     loss='categorical_crossentropy',
+            #     optimizer=SGD(learning_rate=0.0001, clipnorm=1.0))
+            return model
 
-    @staticmethod
-    def simulate_game(black_player, white_player, board_size):
+    def simulate_game(self, black_player, white_player, board_size, game_num):
         moves = []
         game = GameState.new_game(board_size)
         agents = {
@@ -132,12 +147,26 @@ class SelfPlayer:
         print_board(game.board)
         game_result = scoring.compute_game_result(game)
         logger.info(game_result)
+        print(f'GAME RESULT: {game_result}')
+        # sgf_name = f'sgf_{self.exp_name}_{game_num}'
+        # sgf_path = self.get_exp_path(sgf_name)
+        # self.encode_sgf(self.board_size, moves, sgf_path)
 
         return GameRecord(
             moves=moves,
             winner=game_result.winner,
             margin=game_result.winning_margin,
         )
+
+    def encode_sgf(self, board_size, moves, pathname):
+        game = Sgf_game(size=board_size)
+        for move_info in moves:
+            node = game.extend_main_sequence()
+            node.set_move(move_info.colour, move_info.move)
+            if move_info.comment is not None:
+                node.set("C", move_info.comment)
+        with open(pathname, "wb") as f:
+            f.write(game.serialise())
 
 
 if __name__ == '__main__':

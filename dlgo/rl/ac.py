@@ -1,9 +1,14 @@
 import logging.config
+from pathlib import Path
 
 import numpy as np
+
 import tensorflow as tf
+
 keras = tf.keras
+from keras.callbacks import ModelCheckpoint
 from keras.optimizers import SGD
+from keras.models import Model, load_model, save_model
 
 from dlgo.goboard_fast import Move
 from dlgo.agent.base import Agent
@@ -13,7 +18,6 @@ __all__ = [
     'ACAgent'
 ]
 
-logging.config.fileConfig('log_confs/ac_train_logging.conf')
 logger = logging.getLogger('acTrainingLogger')
 
 
@@ -36,9 +40,10 @@ class ACAgent(Agent):
         num_moves = self.encoder.board_width * self.encoder.board_height
 
         board_tensor = self.encoder.encode(game_state)
+        board_tensor = np.transpose(board_tensor, (1, 2, 0))
         X = np.array([board_tensor])
 
-        actions, values = self.model.predict(X)
+        actions, values = self.model.predict(X, verbose=0)
         move_probs = actions[0]
         estimated_value = values[0][0]
         self.last_state_value = float(estimated_value)
@@ -71,16 +76,36 @@ class ACAgent(Agent):
         return Move.pass_turn()
 
     def train(self, experience, lr=0.1, batch_size=128):
-        opt = SGD(lr=lr, clipvalue=0.2)
+        opt = SGD(learning_rate=lr, clipvalue=0.2)
         self.model.compile(
             optimizer=opt,
-            loss=['categorical_crossentropy', 'mse'])
+            loss=['categorical_crossentropy', 'mse'],
+            loss_weights=[1.0, 0.5])
 
-        self.model.fit(
-            experience.next(),
+        history = self.model.fit(
+            experience.generate(),
+            steps_per_epoch=len(experience),
             batch_size=batch_size,
-            epochs=10
+            verbose=1,
+            epochs=20,
         )
+
+        # print(f'Model name: {self.model.name}')
+        # print(f'Model inputs: {self.model.inputs}')
+        # print(f'Model outputs: {self.model.outputs}')
+        #
+        # print(f'HISTORY KEYS: {history.history.keys()}')
+        # self.model.summary()
+        #
+        # print(f'ac.py: Checking generator...')
+        # for i in range(len(experience)):
+        #     # Generate a batch of input data and labels from the generator
+        #     x, y = next(experience.generate())
+        #
+        #     # Inspect the input data and labels
+        #     print('Input data shape:', x.shape)
+        #     policy, value = y
+        #     print('Labels shape:', policy.shape)
 
     def diagnostics(self):
         return {'value': self.last_state_value}
