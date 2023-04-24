@@ -43,9 +43,14 @@ class ACAgent(Agent):
         board_tensor = np.transpose(board_tensor, (1, 2, 0))
         X = np.array([board_tensor])
 
-        actions, values = self.model.predict(X, verbose=0)
+        # actions, values = self.model.predict(X, verbose=0)
+        actions, values = self.model(X)
+        actions = actions.numpy()
+
+
         move_probs = actions[0]
         estimated_value = values[0][0]
+        estimated_value = estimated_value.numpy()
         self.last_state_value = float(estimated_value)
 
         # Prevent move probs from getting stuck at 0 or 1.
