@@ -102,16 +102,14 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
     def test_selfplay(self):
         project_path = Path.cwd()
         model_dir = project_path / 'models'
-        model_name = 'model_test.h5'
+        model_name = 'model_ac_test.h5'
 
         num_games = 1
-        exp_path = project_path / 'exp' / f'exp_{num_games}_test.h5'
-        # exp_path2 = project_path / 'exp' / 'exp_agent2_test.h5'
+        exp_path = project_path / 'exp' / f'exp_{num_games}_ac_test.h5'
 
         model_full_path = model_dir / model_name
         self.unlink_file(model_full_path)
         self.unlink_file(exp_path)
-        # self.unlink_file(exp_path2)
 
         board_size = 9
         initiator = Initiator(board_size, model_name)
@@ -134,13 +132,9 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
             print(
                 f'Batch {i}: states shape={states.shape}, policy target shape={targets[0].shape}, value target shape={targets[1].shape}')
 
-        # self.unlink_file(model_full_path)
-        # self.unlink_file(exp_path1)
-        # self.unlink_file(exp_path2)
-
     def test_visualize_exp(self):
         project_path = Path.cwd()
-        exp_path = project_path / 'exp' / 'exp_1_test.h5'
+        exp_path = project_path / 'exp' / 'exp_1_ac_test.h5'
         board_size = 9
 
         with h5py.File(exp_path, 'r') as f:
@@ -264,11 +258,89 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
         print(f'ADVANTAGE: {advantage}')
         self.assertEqual(first_move, first_move_from_exp)
 
+    def test_ac_agent(self):
+        # run test_selfplay() first
+        project_path = Path.cwd()
+        model_name = 'model_ac_test.h5'
+
+        exp_path = project_path / 'exp' / 'exp_1_ac_test.h5'
+
+        board_size = 9
+        game_state = GameState.new_game(board_size)
+        moves = []
+        encoder = get_encoder_by_name('simple', board_size)
+
+        player = SelfPlayer(board_size, model_name, 3)
+
+        ac_bot1 = player.create_bot(1)
+        collector1 = EpisodeExperienceCollector(exp_path, board_size, 11)
+        ac_bot1.set_collector(collector1)
+        collector1.begin_episode()
+
+        next_move = ac_bot1.select_move(game_state)
+        print(f'NEXT MOVE: {next_move}')
+        print(f'NEXT MOVE ENCODED: {encoder.encode_point(next_move.point)}')
+        first_move = encoder.decode_point_index(encoder.encode_point(next_move.point))
+        print(f'NEXT MOVE DECODED BACK: {first_move}')
+        collector1.complete_episode(reward=1)
+        with h5py.File(exp_path, 'r') as f:
+            state = f['experience/states'][0]
+            action = f['experience/actions'][0]
+            reward = f['experience/rewards'][0]
+            advantage = f['experience/advantages'][0]
+        print(f'STATE:')
+        decoder = BoardDecoder(state)
+        decoder.print()
+        print(f'')
+        print(f'ACTION: {action}')
+        first_move_from_exp = encoder.decode_point_index(action)
+        print(f'ACTION DECODED: {first_move_from_exp}')
+        print(f'REWARD: {reward}')
+        print(f'ADVANTAGE: {advantage}')
+
+        moves.append(next_move)
+        game_state = game_state.apply_move(next_move)
+        ac_bot2 = player.create_bot(2)
+        collector2 = EpisodeExperienceCollector(exp_path, board_size, 11)
+        ac_bot2.set_collector(collector2)
+        collector2.begin_episode()
+
+        next_move = ac_bot2.select_move(game_state)
+        print(f'NEXT MOVE: {next_move}')
+        print(f'NEXT MOVE ENCODED: {encoder.encode_point(next_move.point)}')
+        print(f'NEXT MOVE DECODED BACK: {encoder.decode_point_index(encoder.encode_point(next_move.point))}')
+        collector2.complete_episode(reward=1)
+        with h5py.File(exp_path, 'r') as f:
+            state = f['experience/states'][0]
+            action = f['experience/actions'][0]
+            reward = f['experience/rewards'][0]
+            advantage = f['experience/advantages'][0]
+        print(f'STATE:')
+        decoder = BoardDecoder(state)
+        decoder.print()
+        print(f'')
+        print(f'ACTION: {action}')
+        second_move_from_exp = encoder.decode_point_index(action)
+        print(f'ACTION DECODED: {second_move_from_exp}')
+        print(f'REWARD: {reward}')
+        print(f'ADVANTAGE: {advantage}')
+        self.assertEqual(first_move, first_move_from_exp)
+
     def test_inputs_outputs(self):
 
-        model_path = Path.cwd() / 'models' / 'model_test.h5'
-        new_model_path = Path.cwd() / 'models' / 'new_model_test.h5'
-        exp_path = Path.cwd() / 'exp' / 'exp_1_test.h5'
+        tf.compat.v1.reset_default_graph()
+        tf.keras.backend.clear_session()
+        # tf.debugging.set_log_device_placement(True)
+
+        model_path = Path.cwd() / 'models' / 'model_ac_test.h5'
+        new_model_path = Path.cwd() / 'models' / 'new_model_ac_test.h5'
+        exp_path = Path.cwd() / 'exp' / 'exp_1_ac_test.h5'
+
+        with h5py.File(exp_path, 'r') as f:
+            generator = ExpGenerator(exp_path, 32, 11, 9, seed=1234)
+            steps_per_epoch = len(generator)
+            print(f'Len(generator) = {steps_per_epoch}')
+
         trainer = ACTrainer(9, model_path, new_model_path, 0.001, 32, exp_path)
         trainer.train()
 
@@ -277,9 +349,9 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
 
         model = load_model(new_model_path)
 
-        print(f'Model name: {model.name}')
-        print(f'Model inputs: {model.inputs}')
-        print(f'Model outputs: {model.outputs}')
+        print(f'TEST Model name: {model.name}')
+        print(f'TEST Model inputs: {model.inputs}')
+        print(f'TEST Model outputs: {model.outputs}')
 
         generator = ExpGenerator(exp_path, 32, 11, 9, seed=1234)
         steps_per_epoch = len(generator)
@@ -293,33 +365,206 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
             epochs=1
         )
 
-        # # create a dataset from the generator
-        # board_input_spec = tf.TensorSpec(shape=(None, 9, 9, 11), dtype=tf.float32)
-        # policy_output_spec = tf.TensorSpec(shape=(None, 81), dtype=tf.int32)
-        # value_output_spec = tf.TensorSpec(shape=(None, 1), dtype=tf.int32)
+        print(f'TEST Model name: {model.name}')
+        print(f'TEST Model inputs: {model.inputs}')
+        print(f'TEST Model input shape: {model.input_shape}')
+        print(f'TEST Model outputs: {model.outputs}')
+        # print(f'{model.summary()}')
+
+        gen = ExpGenerator(exp_path, 32, 11, 9, seed=1234)
+        length = gen.num_states()
+        print(f'LENGTH: {length}')
+
+        # def generator():
+        #     for states, targets in gen.generate():
+        #         yield states, targets
+
+        def generator():
+            for states, targets in gen.generate():
+                x = tf.convert_to_tensor(states, dtype=tf.float32)
+                y1 = tf.convert_to_tensor(targets[0], dtype=tf.float32)
+                y2 = tf.convert_to_tensor(targets[1], dtype=tf.float32)
+                yield x, (y1, y2)
+
+        ds = tf.data.Dataset.from_generator(
+            generator,
+            output_signature=(
+                tf.TensorSpec(shape=(32, 9, 9, 11), dtype=tf.float32),
+                (
+                    tf.TensorSpec(shape=(32, 81), dtype=tf.float32),
+                    tf.TensorSpec(shape=(32,), dtype=tf.float32)
+                )
+            )
+        )
+
+        for i, (x, y) in enumerate(ds):
+            if i >= length // 32:
+                break
+            print(
+                f'Batch {i}: states shape={x.shape}, policy target shape={y[0].shape}, value target shape={y[1].shape}'
+            )
+            for item in range(32):
+                # if item == 0:
+                print(f'ITEM: {item}')
+                decoder = BoardDecoder(x[item])
+                decoder.print()
+                print(f'')
+                move = np.argmax(y[0][item], axis=None, out=None)
+                encoder = get_encoder_by_name('simple', 9)
+                point = encoder.decode_point_index(move)
+                # print(move)
+                print(point)
+                print(f'')
+                print(f'POLICY TARGET (THE ACTOR):')
+                print(f'{y[0][item]}')
+                print(f'VALUE TARGET (THE CRITIC):')
+                print(f'{y[1][item]}')
+
+        # new_state = [[[0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.]],
         #
+        #              [[0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.]],
+        #
+        #              [[0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.]],
+        #
+        #              [[0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.]],
+        #
+        #              [[0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.]],
+        #
+        #              [[0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.]],
+        #
+        #              [[0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 1., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.]],
+        #
+        #              [[0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.]],
+        #
+        #              [[0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
+        #               [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.]]]
+        #
+        # new_states = np.array(new_state)
+        # print(new_states.shape)
+
+        # with h5py.File(exp_path, 'r') as f:
+        #     for i in range(1):
+        #         state = f['experience/states'][i]
+        #         action = f['experience/actions'][i]
+        #         reward = f['experience/rewards'][i]
+        #         advantage = f['experience/advantages'][i]
+        #         print(f'state: {state}')
+        #         print(f'action: {action}')
+        #         print(f'reward: {reward}')
+        #         print(f'advantage: {advantage}')
+
+        # gen = ExpGenerator(exp_path, 32, 11, 9, seed=1234)
+        # length = gen.num_states()
+        # print(f'LENGTH: {length}')
+        # next_batch = gen.generate()
+        #
+        # for i, (states, targets) in enumerate(next_batch):
+        #     if i >= length // 32:
+        #         break
+        #     print(
+        #         f'Batch {i}: states shape={states.shape}, policy target shape={targets[0].shape}, value target shape={targets[1].shape}')
+        #     x, y = map_func(states, targets)
+        #     print(f'x.shape = {x.shape}, {x.dtype}')
+        #     policy, value = y
+        #     print(f'policy = {policy.shape}, {policy.dtype}')
+        #     print(f'value = {value.shape}, {value.dtype}')
+        #
+        # # Define the output signature of the dataset
         # output_signature = (
-        #     (board_input_spec,),
-        #     (policy_output_spec, value_output_spec)
+        #     tf.TensorSpec(shape=(32, 9, 9, 11), dtype=tf.float32),
+        #     (
+        #         tf.TensorSpec(shape=(32, 81), dtype=tf.float32),
+        #         tf.TensorSpec(shape=(32,), dtype=tf.float32)
+        #     )
         # )
         #
+        # # Create the dataset
         # dataset = tf.data.Dataset.from_generator(
         #     generator=generator.generate,
         #     output_signature=output_signature
         # )
         #
+        # dataset = dataset.map(map_func)
+        # print(f'DATASET:')
+        # print(dataset)
+        #
         # # example usage of the dataset
-        # for X, y in dataset.take(5):
-        #     print(X.shape, y.shape)
+        # print(f'ELEMENT SPEC:')
+        # print(dataset.element_spec)
         #
-        # # enable eager execution
-        # tf.config.experimental_run_functions_eagerly(True)
-        #
-        # # iterate over the dataset and perform eager execution
-        # for x_batch, y_batch in dataset:
-        #     # perform eager execution on x_batch and y_batch
-        #     loss = model.train_on_batch(x_batch, y_batch)
-        #     print(f'loss: {loss}')
+        # for element in dataset.as_numpy_iterator():
+        #     print(element)
 
     def print_h5_structure(self, obj, indent=0):
         """

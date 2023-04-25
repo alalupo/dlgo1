@@ -18,6 +18,7 @@ class EpisodeExperienceCollector(object):
         self._current_episode_actions = []
         self._current_episode_estimated_values = []
         self.cleaning()
+        self.max_advantage = 0.0
 
     def cleaning(self):
         exp_file = Path(self.str_h5file)
@@ -72,6 +73,8 @@ class EpisodeExperienceCollector(object):
         advantages = []
         for i in range(num_states):
             advantage = round(reward - self._current_episode_estimated_values[i], 2)
+            if advantage > self.max_advantage:
+                self.max_advantage = advantage
             advantages.append(advantage)
 
         states, actions, rewards, advantages = self.get_buffer_data(self._current_episode_states,
@@ -98,6 +101,21 @@ class EpisodeExperienceCollector(object):
             h5file['experience/advantages'].resize(
                 (h5file['experience/advantages'].shape[0] + advantages.shape[0]), axis=0)
             h5file['experience/advantages'][-advantages.shape[0]:] = advantages
+            if 'max_advantage' in h5file['experience'].keys():
+                saved_max_advantage = h5file['experience/max_advantage'][()]
+                if saved_max_advantage > self.max_advantage:
+                    h5file['experience/max_advantage'][()] = saved_max_advantage
+                else:
+                    h5file['experience/max_advantage'][()] = self.max_advantage
+            else:
+                h5file['experience'].create_dataset(name='max_advantage', data=self.max_advantage, dtype='float32')
+                saved_max_advantage = h5file['experience/max_advantage'][()]
+                if saved_max_advantage > self.max_advantage:
+                    h5file['experience/max_advantage'][()] = saved_max_advantage
+                else:
+                    h5file['experience/max_advantage'][()] = self.max_advantage
+
+
         else:
             h5file.create_group('experience')
             h5file['experience'].create_dataset(
@@ -107,6 +125,8 @@ class EpisodeExperienceCollector(object):
             h5file['experience'].create_dataset(name='actions', data=actions, maxshape=(None,))
             h5file['experience'].create_dataset(name='rewards', data=rewards, maxshape=(None,))
             h5file['experience'].create_dataset(name='advantages', data=advantages, maxshape=(None,))
+            h5file['experience'].create_dataset(name='max_advantage', data=self.max_advantage, dtype='float32')
+
 
             # h5file['experience/states'].resize((h5file['experience/states'].shape[0] + states.shape[0]), axis=0)
             # h5file['experience/states'][-states.shape[0]:] = states

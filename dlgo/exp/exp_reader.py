@@ -2,7 +2,6 @@ import h5py
 import numpy as np
 import tensorflow as tf
 keras = tf.keras
-from keras.utils import to_categorical
 
 
 class ExpGenerator:
@@ -36,6 +35,7 @@ class ExpGenerator:
 
     def _generate(self):
         with h5py.File(self.exp_file, 'r') as f:
+            max_advantage = f['experience/max_advantage'][()]
             num_samples = self.num_states()
             indices = np.arange(num_samples)
             num_batches = num_samples // self.batch_size
@@ -49,10 +49,34 @@ class ExpGenerator:
                     action = f['experience/actions'][idx]
                     reward = f['experience/rewards'][idx]
                     advantage = f['experience/advantages'][idx]
-                    policy_target[j][action] = advantage
+                    if max_advantage > 0:
+                        policy_target[j][action] = advantage / max_advantage
+                        # print(f'EXP READER: max_advantage = {max_advantage}')
+                    else:
+                        policy_target[j][action] = advantage
                     value_target[j] = reward
                 targets = [policy_target, value_target]
                 yield states, targets
+
+    # def _generate(self):
+    #     with h5py.File(self.exp_file, 'r') as f:
+    #         num_samples = self.num_states()
+    #         indices = np.arange(num_samples)
+    #         num_batches = num_samples // self.batch_size
+    #         for i in range(num_batches):
+    #             batch_indices = indices[i * self.batch_size:(i + 1) * self.batch_size]
+    #             states = f['experience/states'][batch_indices]
+    #             states = states.astype('float32')
+    #             policy_target = np.zeros((self.batch_size, self.num_moves), dtype='float32')
+    #             value_target = np.zeros((self.batch_size,), dtype='float32')
+    #             for j, idx in enumerate(batch_indices):
+    #                 action = f['experience/actions'][idx]
+    #                 reward = f['experience/rewards'][idx]
+    #                 advantage = f['experience/advantages'][idx]
+    #                 policy_target[j][action] = advantage
+    #                 value_target[j] = reward
+    #             targets = [policy_target, value_target]
+    #             yield states, targets
 
     # def __next__(self):
     #     with h5py.File(self.exp_file, 'r') as f:

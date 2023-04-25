@@ -3,7 +3,7 @@ import numpy as np
 from keras.optimizers import SGD
 
 from .. import encoders
-from .. import goboard
+from .. import goboard_fast
 from .. import kerasutil
 from ..agent import Agent
 

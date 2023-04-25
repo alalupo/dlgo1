@@ -71,7 +71,7 @@ class Evaluator:
         losses = 0
         color1 = Player.black
         for i in range(self.num_games):
-            print(f'Simulating game{i + 1}/{self.num_games}...')
+            print(f'Simulating game {i + 1} / {self.num_games}...')
             if color1 == Player.black:
                 black_player, white_player = agent1, agent2
             else:
@@ -82,7 +82,7 @@ class Evaluator:
             else:
                 losses += 1
             color1 = color1.other
-        print(f'Agent 1 record: {wins}/{wins + losses}')
+        print(f'Agent 1 record: {wins} / {wins + losses}')
 
     def simulate_game(self, black_player, white_player):
         moves = []

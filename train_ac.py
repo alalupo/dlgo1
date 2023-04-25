@@ -5,9 +5,12 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import h5py
 import tensorflow as tf
+
+# tf.compat.v1.reset_default_graph()
+# tf.keras.backend.clear_session()
+# tf.debugging.set_log_device_placement(True)
 keras = tf.keras
-from keras.models import Model, load_model, save_model
-from keras.optimizers import SGD
+from keras.models import load_model, save_model
 
 from dlgo.tools.file_finder import FileFinder
 from dlgo.rl.ac import ACAgent
@@ -58,8 +61,12 @@ class ACTrainer:
         self.batch_size = batch_size
         self.exp_files = exp_files
         self.exp_paths = []
-        for exp_file in self.exp_files:
-            exp_path = self.get_exp_path(exp_file)
+        if isinstance(exp_files, (list, tuple)):
+            for exp_file in exp_files:
+                exp_path = self.get_exp_path(exp_file)
+                self.exp_paths.append(exp_path)
+        else:
+            exp_path = self.get_exp_path(exp_files)
             self.exp_paths.append(exp_path)
         logger.info(f'=== NEW ACTrainer OBJECT CREATED ===')
         logger.info(f'ENCODER: {self.encoder.name()}')

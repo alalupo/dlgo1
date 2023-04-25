@@ -47,7 +47,6 @@ class ACAgent(Agent):
         actions, values = self.model(X)
         actions = actions.numpy()
 
-
         move_probs = actions[0]
         estimated_value = values[0][0]
         estimated_value = estimated_value.numpy()
@@ -92,25 +91,13 @@ class ACAgent(Agent):
             steps_per_epoch=len(experience),
             batch_size=batch_size,
             verbose=1,
-            epochs=5,
+            epochs=1,
         )
 
-        # print(f'Model name: {self.model.name}')
-        # print(f'Model inputs: {self.model.inputs}')
-        # print(f'Model outputs: {self.model.outputs}')
-        #
-        # print(f'HISTORY KEYS: {history.history.keys()}')
-        # self.model.summary()
-        #
-        # print(f'ac.py: Checking generator...')
-        # for i in range(len(experience)):
-        #     # Generate a batch of input data and labels from the generator
-        #     x, y = next(experience.generate())
-        #
-        #     # Inspect the input data and labels
-        #     print('Input data shape:', x.shape)
-        #     policy, value = y
-        #     print('Labels shape:', policy.shape)
+        logger.info(f'Model name: {self.model.name}')
+        logger.info(f'Model inputs: {self.model.inputs}')
+        logger.info(f'Model outputs: {self.model.outputs}')
+        # logger.info(f'{self.model.summary()}')
 
     def diagnostics(self):
         return {'value': self.last_state_value}
