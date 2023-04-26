@@ -20,13 +20,12 @@ class AgentCriticNetwork:
         self.name = 'agent_critic'
 
     def define_layers(self):
-        conv1a = ZeroPadding2D((2, 2), name='first_zero_pad')(self.board_input)
-        conv1b = Conv2D(64, (5, 5), activation='relu', name='first_conv2D')(conv1a)
 
-        conv2a = ZeroPadding2D((1, 1), name='second_zero_pad')(conv1b)
-        conv2b = Conv2D(64, (3, 3), activation='relu', name='second_conv2D')(conv2a)
+        net = Conv2D(64, (3, 3), padding='same', activation='relu', name='first_conv2D')(self.board_input)
+        net = Conv2D(64, (3, 3), padding='same', activation='relu', name='second_conv2D')(net)
+        net = Conv2D(64, (3, 3), padding='same', activation='relu', name='third_conv2D')(net)
 
-        flat = Flatten(name='flat')(conv2b)
+        flat = Flatten(name='flat')(net)
         processed_board = Dense(512, name='processed_board')(flat)
 
         policy_hidden_layer = Dense(512, activation='relu', name='policy_hidden_layer')(processed_board)
@@ -34,6 +33,21 @@ class AgentCriticNetwork:
         value_hidden_layer = Dense(512, activation='relu', name='value_hidden_layer')(processed_board)
         value_output = Dense(1, activation='tanh', name='value_output')(value_hidden_layer)
         return policy_output, value_output
+
+        # conv1a = ZeroPadding2D((2, 2), name='first_zero_pad')(self.board_input)
+        # conv1b = Conv2D(64, (5, 5), activation='relu', name='first_conv2D')(conv1a)
+        #
+        # conv2a = ZeroPadding2D((1, 1), name='second_zero_pad')(conv1b)
+        # conv2b = Conv2D(64, (3, 3), activation='relu', name='second_conv2D')(conv2a)
+        #
+        # flat = Flatten(name='flat')(conv2b)
+        # processed_board = Dense(512, name='processed_board')(flat)
+        #
+        # policy_hidden_layer = Dense(512, activation='relu', name='policy_hidden_layer')(processed_board)
+        # policy_output = Dense(self.encoder.num_points(), activation='softmax', name='policy_output')(policy_hidden_layer)
+        # value_hidden_layer = Dense(512, activation='relu', name='value_hidden_layer')(processed_board)
+        # value_output = Dense(1, activation='tanh', name='value_output')(value_hidden_layer)
+        # return policy_output, value_output
 
 
 class TrainerNetwork:

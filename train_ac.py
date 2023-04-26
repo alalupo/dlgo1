@@ -27,7 +27,7 @@ def main():
     parser.add_argument('--learning-model', '-in', required=True)
     parser.add_argument('--model-out', '-out', required=True)
     parser.add_argument('--learning-rate', '-lr', type=float, default=0.0001)
-    parser.add_argument('--batch-size', '-batch', type=int, default=32)
+    parser.add_argument('--batch-size', '-batch', type=int, default=128)
     parser.add_argument('experience', nargs='+')
 
     args = parser.parse_args()
@@ -81,10 +81,12 @@ class ACTrainer:
         return finder.get_exp_full_path(name)
 
     def train(self):
+        print(f'')
         print(f'>>>LOADING AGENT')
         learning_agent = self.create_bot(self.model_in_path)
 
         for exp_filename in self.exp_paths:
+            print(f'')
             print(f'>>>LOADING EXPERIENCE: {exp_filename}')
             generator = ExpGenerator(exp_file=exp_filename,
                                      batch_size=self.batch_size,

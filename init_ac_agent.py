@@ -15,7 +15,7 @@ from dlgo.tools.file_finder import FileFinder
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.networks.func_networks import AgentCriticNetwork
 
-# logging.config.fileConfig('log_confs/ac_train_logging.conf')
+
 logger = logging.getLogger('acTrainingLogger')
 
 
@@ -57,6 +57,7 @@ class Initiator:
     def create_model(self):
         model = Model(inputs=self.network.board_input,
                       outputs=[self.network.policy_output, self.network.value_output])
+
         opt = SGD(learning_rate=0.0001, clipvalue=0.2)
         model.compile(
             optimizer=opt,

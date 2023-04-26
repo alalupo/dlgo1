@@ -79,7 +79,7 @@ class ACAgent(Agent):
         # No legal, non-self-destructive moves less.
         return Move.pass_turn()
 
-    def train(self, experience, lr=0.1, batch_size=128):
+    def train(self, experience, lr=0.001, batch_size=128):
         opt = SGD(learning_rate=lr, clipvalue=0.2)
         self.model.compile(
             optimizer=opt,
