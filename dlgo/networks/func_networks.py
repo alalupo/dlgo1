@@ -16,14 +16,25 @@ class AgentCriticNetwork:
     def __init__(self, encoder):
         self.encoder = encoder
         self.board_input = Input(shape=encoder.shape_for_keras(), name='board_input')
-        self.policy_output, self.value_output = self.define_layers()
+        self.policy_output, self.value_output = self.define_layers(0.01)
         self.name = 'agent_critic'
 
-    def define_layers(self):
+    def define_layers(self, reg_lambda):
 
-        net = Conv2D(64, (3, 3), padding='same', activation='relu', name='first_conv2D')(self.board_input)
-        net = Conv2D(64, (3, 3), padding='same', activation='relu', name='second_conv2D')(net)
-        net = Conv2D(64, (3, 3), padding='same', activation='relu', name='third_conv2D')(net)
+        net = ZeroPadding2D(padding=3)(self.board_input)
+        net = Conv2D(48, (7, 7), activation='relu', data_format="channels_last", kernel_regularizer=l2(reg_lambda))(net)
+
+        net = ZeroPadding2D(padding=2)(net)
+        net = Conv2D(32, (5, 5), activation='relu', data_format="channels_last", kernel_regularizer=l2(reg_lambda))(net)
+
+        # net = ZeroPadding2D((1, 1), name='first_zero_pad')(self.board_input)
+        # net = Conv2D(48, (3, 3), activation='relu', name='first_conv2D')(net)
+
+        # net = ZeroPadding2D((1, 1), name='second_zero_pad')(net)
+        # net = Conv2D(48, (3, 3), activation='relu', name='second_conv2D')(net)
+
+        # net = ZeroPadding2D((1, 1), name='third_zero_pad')(net)
+        # net = Conv2D(32, (3, 3), activation='relu', name='third_conv2D')(net)
 
         flat = Flatten(name='flat')(net)
         processed_board = Dense(512, name='processed_board')(flat)
@@ -34,13 +45,11 @@ class AgentCriticNetwork:
         value_output = Dense(1, activation='tanh', name='value_output')(value_hidden_layer)
         return policy_output, value_output
 
-        # conv1a = ZeroPadding2D((2, 2), name='first_zero_pad')(self.board_input)
-        # conv1b = Conv2D(64, (5, 5), activation='relu', name='first_conv2D')(conv1a)
+        # net = Conv2D(64, (3, 3), padding='same', activation='relu', name='first_conv2D')(self.board_input)
+        # net = Conv2D(64, (3, 3), padding='same', activation='relu', name='second_conv2D')(net)
+        # net = Conv2D(64, (3, 3), padding='same', activation='relu', name='third_conv2D')(net)
         #
-        # conv2a = ZeroPadding2D((1, 1), name='second_zero_pad')(conv1b)
-        # conv2b = Conv2D(64, (3, 3), activation='relu', name='second_conv2D')(conv2a)
-        #
-        # flat = Flatten(name='flat')(conv2b)
+        # flat = Flatten(name='flat')(net)
         # processed_board = Dense(512, name='processed_board')(flat)
         #
         # policy_hidden_layer = Dense(512, activation='relu', name='policy_hidden_layer')(processed_board)
@@ -48,6 +57,8 @@ class AgentCriticNetwork:
         # value_hidden_layer = Dense(512, activation='relu', name='value_hidden_layer')(processed_board)
         # value_output = Dense(1, activation='tanh', name='value_output')(value_hidden_layer)
         # return policy_output, value_output
+
+
 
 
 class TrainerNetwork:

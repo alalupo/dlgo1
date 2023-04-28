@@ -1,14 +1,10 @@
 import logging.config
-from pathlib import Path
 
 import numpy as np
-
 import tensorflow as tf
 
 keras = tf.keras
-from keras.callbacks import ModelCheckpoint
 from keras.optimizers import SGD
-from keras.models import Model, load_model, save_model
 
 from dlgo.goboard_fast import Move
 from dlgo.agent.base import Agent
@@ -27,7 +23,7 @@ class ACAgent(Agent):
         self.model = model
         self.encoder = encoder
         self.collector = None
-        self.temperature = 1.0
+        self.temperature = 1.05
         self.last_state_value = 0
 
     def set_temperature(self, temperature):
@@ -79,12 +75,12 @@ class ACAgent(Agent):
         # No legal, non-self-destructive moves less.
         return Move.pass_turn()
 
-    def train(self, experience, lr=0.001, batch_size=128):
-        opt = SGD(learning_rate=lr, clipvalue=0.2)
+    def train(self, experience, lr=0.0001, batch_size=128):
+        opt = SGD(learning_rate=lr, clipnorm=1)
         self.model.compile(
             optimizer=opt,
             loss=['categorical_crossentropy', 'mse'],
-            loss_weights=[1.0, 0.5])
+            loss_weights=[0.97, 0.03])
 
         history = self.model.fit(
             experience.generate(),

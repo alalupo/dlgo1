@@ -26,8 +26,8 @@ def main():
     parser.add_argument('--board-size', '-size', type=int, default=19, required=False)
     parser.add_argument('--learning-model', '-in', required=True)
     parser.add_argument('--model-out', '-out', required=True)
-    parser.add_argument('--learning-rate', '-lr', type=float, default=0.0001)
-    parser.add_argument('--batch-size', '-batch', type=int, default=128)
+    parser.add_argument('--learning-rate', '-lr', type=float, default=0.0003)
+    parser.add_argument('--batch-size', '-batch', type=int, default=2048)
     parser.add_argument('experience', nargs='+')
 
     args = parser.parse_args()
@@ -99,10 +99,8 @@ class ACTrainer:
                 lr=self.learning_rate,
                 batch_size=self.batch_size)
         print(f'>>>New model is getting saved.')
-        # save_model(model=learning_agent.model, filepath=self.model_out_path, save_format='h5')
         with h5py.File(self.model_out_path, 'w') as model_outf:
             save_model(model=learning_agent.model, filepath=model_outf, save_format='h5')
-        # learning_agent.model.save(self.model_out_path, save_format='h5')
 
     def create_bot(self, model_path):
         print(f'>>>Creating bot {model_path}...')

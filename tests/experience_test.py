@@ -375,10 +375,6 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
         length = gen.num_states()
         print(f'LENGTH: {length}')
 
-        # def generator():
-        #     for states, targets in gen.generate():
-        #         yield states, targets
-
         def generator():
             for states, targets in gen.generate():
                 x = tf.convert_to_tensor(states, dtype=tf.float32)
@@ -540,6 +536,16 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
         #     print(f'policy = {policy.shape}, {policy.dtype}')
         #     print(f'value = {value.shape}, {value.dtype}')
         #
+
+        # Define a function to map the generator output to TensorFlow format
+        # def map_func(x, y1, y2):
+        #     # Convert the numpy arrays to TensorFlow format
+        #     x = tf.convert_to_tensor(x, dtype=tf.float32)
+        #     y1 = tf.convert_to_tensor(y1, dtype=tf.float32)
+        #     y2 = tf.convert_to_tensor(y2, dtype=tf.float32)
+        #
+        #     return (x, (y1, y2))
+        #
         # # Define the output signature of the dataset
         # output_signature = (
         #     tf.TensorSpec(shape=(32, 9, 9, 11), dtype=tf.float32),
@@ -548,22 +554,15 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
         #         tf.TensorSpec(shape=(32,), dtype=tf.float32)
         #     )
         # )
+
+        print(f'DATASET:')
+        print(ds)
         #
-        # # Create the dataset
-        # dataset = tf.data.Dataset.from_generator(
-        #     generator=generator.generate,
-        #     output_signature=output_signature
-        # )
+        # example usage of the dataset
+        print(f'ELEMENT SPEC:')
+        print(ds.element_spec)
         #
-        # dataset = dataset.map(map_func)
-        # print(f'DATASET:')
-        # print(dataset)
-        #
-        # # example usage of the dataset
-        # print(f'ELEMENT SPEC:')
-        # print(dataset.element_spec)
-        #
-        # for element in dataset.as_numpy_iterator():
+        # for element in ds.as_numpy_iterator():
         #     print(element)
 
     def print_h5_structure(self, obj, indent=0):
