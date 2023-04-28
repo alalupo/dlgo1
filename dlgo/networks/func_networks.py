@@ -66,65 +66,66 @@ class TrainerNetwork:
         self.encoder = encoder
         self.num_classes = self.encoder.num_points()
         self.board_input = Input(shape=encoder.shape_for_keras(), name='board_input')  # (None, 19, 19, 11)
-        self.name = 'trainer3b'
-        self.output = self.define_layers(0.01)
+        self.name = 'trainer4'
+        self.output = self.define_layers(l2(0.01))
 
     def define_layers(self, reg_lambda):
+
+        # trainer3a: 0.0035 -> 0.0045 -> 0.0025 (BEZNADZIEJA!)
+
+        # conv_regularizer = l2(0.01)
+
+        net = ZeroPadding2D(padding=3)(self.board_input)
+        net = Conv2D(48, (7, 7), kernel_regularizer=reg_lambda)(net)
+        net = BatchNormalization()(net)
+        net = LeakyReLU(alpha=0.1)(net)
+
+        net = ZeroPadding2D(padding=2)(net)
+        net = Conv2D(32, (5, 5), kernel_regularizer=reg_lambda)(net)
+        net = BatchNormalization()(net)
+        net = LeakyReLU(alpha=0.1)(net)
+
+        skip = net
+
+        net = ZeroPadding2D(padding=2)(net)
+        net = Conv2D(32, (5, 5), kernel_regularizer=reg_lambda)(net)
+        net = BatchNormalization()(net)
+        net = LeakyReLU(alpha=0.1)(net)
+
+        net = ZeroPadding2D(padding=2)(net)
+        net = Conv2D(32, (5, 5), kernel_regularizer=reg_lambda)(net)
+        net = BatchNormalization()(net)
+
+        net = Add()([net, skip])
+
+        net = LeakyReLU(alpha=0.1)(net)
+
+        flat = Flatten()(net)
+        flat = Dropout(0.5)(flat)
+        output = Dense(self.num_classes, activation='softmax')(flat)
+
+        return output
+
 
         # trainer3b: 100/3:     0.0052 -> 0.0028 -> 0.0026 (BEZNADZIEJA!)
         # trainer3b: 1000/3:    0.0060 -> 0.0073 -> 0.0087
         # trainer3b: 5000/5:    0.01 -> ... -> 0.0363
-        net = ZeroPadding2D(padding=3)(self.board_input)
-        net = Conv2D(48, (7, 7), activation='relu', kernel_regularizer=l2(reg_lambda))(net)
-
-        net = ZeroPadding2D(padding=2)(net)
-        net = Conv2D(32, (5, 5), activation='relu', kernel_regularizer=l2(reg_lambda))(net)
-
-        net = ZeroPadding2D(padding=2)(net)
-        net = Conv2D(32, (5, 5), activation='relu', kernel_regularizer=l2(reg_lambda))(net)
-
-        net = ZeroPadding2D(padding=2)(net)
-        net = Conv2D(32, (5, 5), activation='relu', kernel_regularizer=l2(reg_lambda))(net)
-
-        flat = Flatten()(net)
-        output = Dense(self.num_classes, activation='softmax', kernel_regularizer=l2(reg_lambda))(flat)
-
-        return output
-
-        # trainer5: 3 x 0.0023
         # net = ZeroPadding2D(padding=3)(self.board_input)
-        # net = Conv2D(48, (7, 7))(net)
-        # net = BatchNormalization()(net)
-        # net = LeakyReLU(alpha=0.1)(net)
+        # net = Conv2D(48, (7, 7), activation='relu', kernel_regularizer=l2(reg_lambda))(net)
         #
         # net = ZeroPadding2D(padding=2)(net)
-        # net = Conv2D(32, (5, 5))(net)
-        # net = BatchNormalization()(net)
-        # net = LeakyReLU(alpha=0.1)(net)
-        #
-        # # Skip connection from layer 2 to layer 4
-        # skip = net
+        # net = Conv2D(32, (5, 5), activation='relu', kernel_regularizer=l2(reg_lambda))(net)
         #
         # net = ZeroPadding2D(padding=2)(net)
-        # net = Conv2D(32, (5, 5))(net)
-        # net = BatchNormalization()(net)
-        # net = LeakyReLU(alpha=0.1)(net)
+        # net = Conv2D(32, (5, 5), activation='relu', kernel_regularizer=l2(reg_lambda))(net)
         #
         # net = ZeroPadding2D(padding=2)(net)
-        # net = Conv2D(32, (5, 5))(net)
-        # net = BatchNormalization()(net)
-        #
-        # # Add skip connection to layer 4
-        # net = Add()([net, skip])
-        #
-        # net = LeakyReLU(alpha=0.1)(net)
+        # net = Conv2D(32, (5, 5), activation='relu', kernel_regularizer=l2(reg_lambda))(net)
         #
         # flat = Flatten()(net)
-        # flat = Dropout(0.5)(flat)
-        # output = Dense(self.num_classes, activation='softmax')(flat)
+        # output = Dense(self.num_classes, activation='softmax', kernel_regularizer=l2(reg_lambda))(flat)
         #
         # return output
-
 
         # trainer4 = 0.0042 -> 0.0047 -> 0.0042
         # net = ZeroPadding2D(padding=3)(self.board_input)
@@ -153,31 +154,30 @@ class TrainerNetwork:
         #
         # return output
 
-
-        # trainer3a: 0.0035 -> 0.0045 -> 0.0025 (BEZNADZIEJA!)
-        # conv_regularizer = l2(0.01)
-        #
+        # trainer5: 3 x 0.0023
         # net = ZeroPadding2D(padding=3)(self.board_input)
-        # net = Conv2D(48, (7, 7), kernel_regularizer=conv_regularizer)(net)
+        # net = Conv2D(48, (7, 7))(net)
         # net = BatchNormalization()(net)
         # net = LeakyReLU(alpha=0.1)(net)
         #
         # net = ZeroPadding2D(padding=2)(net)
-        # net = Conv2D(32, (5, 5), kernel_regularizer=conv_regularizer)(net)
+        # net = Conv2D(32, (5, 5))(net)
         # net = BatchNormalization()(net)
         # net = LeakyReLU(alpha=0.1)(net)
         #
+        # # Skip connection from layer 2 to layer 4
         # skip = net
         #
         # net = ZeroPadding2D(padding=2)(net)
-        # net = Conv2D(32, (5, 5), kernel_regularizer=conv_regularizer)(net)
+        # net = Conv2D(32, (5, 5))(net)
         # net = BatchNormalization()(net)
         # net = LeakyReLU(alpha=0.1)(net)
         #
         # net = ZeroPadding2D(padding=2)(net)
-        # net = Conv2D(32, (5, 5), kernel_regularizer=conv_regularizer)(net)
+        # net = Conv2D(32, (5, 5))(net)
         # net = BatchNormalization()(net)
         #
+        # # Add skip connection to layer 4
         # net = Add()([net, skip])
         #
         # net = LeakyReLU(alpha=0.1)(net)
