@@ -48,12 +48,9 @@ class ACAgent(Agent):
         estimated_value = estimated_value.numpy()
         self.last_state_value = float(estimated_value)
 
-        # Prevent move probs from getting stuck at 0 or 1.
-        move_probs = np.power(move_probs, 1.0 / self.temperature)
-        move_probs = move_probs / np.sum(move_probs)
-        eps = 1e-6
+        eps = 1e-5
+        move_probs = (1 - eps) * move_probs + eps / num_moves
         move_probs = np.clip(move_probs, eps, 1 - eps)
-        # Re-normalize to get another probability distribution.
         move_probs = move_probs / np.sum(move_probs)
 
         # Turn the probabilities into a ranked list of moves.
@@ -62,25 +59,29 @@ class ACAgent(Agent):
             candidates, num_moves, replace=False, p=move_probs)
         for point_idx in ranked_moves:
             point = self.encoder.decode_point_index(point_idx)
-            if not game_state.is_valid_move(Move.play(point)):
+            move = Move.play(point)
+            move_is_valid = game_state.is_valid_move(move)
+            fills_own_eye = is_point_an_eye(game_state.board, point, game_state.next_player)
+            if not move_is_valid:
                 continue
-            if not is_point_an_eye(game_state.board, point, game_state.next_player):
-                if self.collector is not None:
-                    self.collector.record_decision(
-                        state=board_tensor,
-                        action=point_idx,
-                        estimated_value=estimated_value
-                    )
-                return Move.play(point)
+            if fills_own_eye:
+                continue
+            if self.collector is not None:
+                self.collector.record_decision(
+                    state=board_tensor,
+                    action=point_idx,
+                    estimated_value=estimated_value
+                )
+            return move
         # No legal, non-self-destructive moves less.
         return Move.pass_turn()
 
-    def train(self, experience, lr=0.0001, batch_size=128):
+    def train(self, experience, lr, batch_size):
         opt = SGD(learning_rate=lr, clipnorm=1)
         self.model.compile(
             optimizer=opt,
-            loss=['categorical_crossentropy', 'mse'],
-            loss_weights=[0.97, 0.03])
+            loss=['categorical_crossentropy', 'huber_loss'],
+            loss_weights=[1, 0.6])
 
         history = self.model.fit(
             experience.generate(),
@@ -88,6 +89,7 @@ class ACAgent(Agent):
             batch_size=batch_size,
             verbose=1,
             epochs=1,
+            shuffle=False,
         )
 
         logger.info(f'Model name: {self.model.name}')

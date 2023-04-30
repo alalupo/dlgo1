@@ -11,16 +11,12 @@ class ExpGenerator:
         self.num_planes = num_planes
         self.board_size = board_size
         self.num_moves = board_size * board_size
-        self.length = self._length()
         self.seed = seed
         self.num_classes = self.board_size * self.board_size
 
     def __len__(self):
-        return self._length()
-
-    def _length(self):
         with h5py.File(self.exp_file, 'r') as f:
-            return int(f['experience']['states'].shape[0] / self.batch_size)
+            return f['experience']['states'].shape[0] // self.batch_size
 
     def num_states(self):
         with h5py.File(self.exp_file, 'r') as f:
@@ -56,7 +52,7 @@ class ExpGenerator:
                     reward = f['experience/rewards'][idx]
                     advantage = f['experience/advantages'][idx]
                     if max_advantage > 0:
-                        policy_target[j][action] = advantage / max_advantage
+                        policy_target[j][action] = round(advantage / max_advantage, 2)
                     else:
                         policy_target[j][action] = advantage
                     value_target[j] = reward

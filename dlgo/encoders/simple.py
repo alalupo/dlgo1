@@ -1,7 +1,7 @@
 import numpy as np
 
 from dlgo.encoders.base import Encoder
-from dlgo.goboard_fast import Move
+from dlgo.goboard_fast import Move, Board, GoString
 from dlgo.gotypes import Player, Point
 from dlgo.networks import network_types
 
@@ -67,6 +67,41 @@ class SimpleEncoder(Encoder):
         # to adjust to channels_last tensorflow format
         return self.board_width, self.board_height, self.num_planes
 
+    def encode_tensor(self, tensor, player):
+        if not isinstance(tensor, np.ndarray) or not tensor.shape == (1, self.board_width * self.board_height):
+            ValueError(f'The tensor should be a numpy array whose the expected shape is: (1, board-size * board-size)')
+        if not isinstance(player, Player):
+            ValueError(f'The player should be a Player object')
+        reshaped_tensor = np.reshape(tensor, (self.board_width, self.board_height))
+        board_tensor = np.zeros(self.shape())
+        if player == Player.black:
+            board_tensor[8] = 1
+        else:
+            board_tensor[9] = 1
+        board = Board(self.board_width, self.board_height)
+        for r in range(self.board_height):
+            for c in range(self.board_width):
+                r1 = self.turn_row_upside_down(r)
+                if reshaped_tensor[r][c] == 1:
+                    p = Point(row=r1 + 1, col=c + 1)
+                    board.place_stone(Player.black, p)
+                if reshaped_tensor[r][c] == -1:
+                    p = Point(row=r1 + 1, col=c + 1)
+                    board.place_stone(Player.white, p)
+        for r in range(self.board_height):
+            for c in range(self.board_width):
+                r1 = self.turn_row_upside_down(r)
+                if not reshaped_tensor[r][c] == 0:
+                    p = Point(row=r1 + 1, col=c + 1)
+                    go_string = board.get_go_string(p)
+                    liberty_plane = min(4, go_string.num_liberties) - 1
+                    if go_string.color == Player.white:
+                        liberty_plane += 4
+                    board_tensor[liberty_plane][r1][c] = 1
+        return board_tensor
+
+    def turn_row_upside_down(self, row):
+        return self.board_width - 1 - row
 
 def create(board_size):
     return SimpleEncoder(board_size)

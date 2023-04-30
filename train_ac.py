@@ -26,7 +26,7 @@ def main():
     parser.add_argument('--board-size', '-size', type=int, default=19, required=False)
     parser.add_argument('--learning-model', '-in', required=True)
     parser.add_argument('--model-out', '-out', required=True)
-    parser.add_argument('--learning-rate', '-lr', type=float, default=0.0003)
+    parser.add_argument('--learning-rate', '-lr', type=float, default=0.007)
     parser.add_argument('--batch-size', '-batch', type=int, default=2048)
     parser.add_argument('experience', nargs='+')
 

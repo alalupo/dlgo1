@@ -1,4 +1,5 @@
 import tensorflow as tf
+
 keras = tf.keras
 from keras.layers import Conv2D, Dense, Activation, Dropout, Flatten, Input
 from keras.layers import ZeroPadding2D, MaxPooling2D, BatchNormalization, LeakyReLU
@@ -16,49 +17,46 @@ class AgentCriticNetwork:
     def __init__(self, encoder):
         self.encoder = encoder
         self.board_input = Input(shape=encoder.shape_for_keras(), name='board_input')
-        self.policy_output, self.value_output = self.define_layers(0.01)
         self.name = 'agent_critic'
+        self.policy_output, self.value_output = self.define_layers(l2(0.01))
 
     def define_layers(self, reg_lambda):
 
-        net = ZeroPadding2D(padding=3)(self.board_input)
-        net = Conv2D(48, (7, 7), activation='relu', data_format="channels_last", kernel_regularizer=l2(reg_lambda))(net)
+        # extremely simple (Keras documentation)
+        # self.name = f'{self.name}_extremely_simple'
+        # net = Dense(128, activation="relu")(self.board_input)
 
-        net = ZeroPadding2D(padding=2)(net)
-        net = Conv2D(32, (5, 5), activation='relu', data_format="channels_last", kernel_regularizer=l2(reg_lambda))(net)
+        # as in book
+        # self.name = f'{self.name}_book'
+        # net = ZeroPadding2D((2, 2))(self.board_input)
+        # net = Conv2D(64, (5, 5), activation='relu')(net)
+        # net = ZeroPadding2D((1, 1))(net)
+        # net = Conv2D(64, (3, 3), activation='relu')(net)
 
-        # net = ZeroPadding2D((1, 1), name='first_zero_pad')(self.board_input)
-        # net = Conv2D(48, (3, 3), activation='relu', name='first_conv2D')(net)
+        # 2 x (padding + regularizer)
+        # self.name = f'{self.name}_2padreg'
+        # net = ZeroPadding2D(padding=3)(self.board_input)
+        # net = Conv2D(48, (7, 7), activation='relu', data_format="channels_last", kernel_regularizer=reg_lambda)(net)
+        # net = ZeroPadding2D(padding=2)(net)
+        # net = Conv2D(32, (5, 5), activation='relu', data_format="channels_last", kernel_regularizer=reg_lambda)(net)
 
-        # net = ZeroPadding2D((1, 1), name='second_zero_pad')(net)
-        # net = Conv2D(48, (3, 3), activation='relu', name='second_conv2D')(net)
-
-        # net = ZeroPadding2D((1, 1), name='third_zero_pad')(net)
-        # net = Conv2D(32, (3, 3), activation='relu', name='third_conv2D')(net)
+        # 3 x (clean conv2d)
+        self.name = f'{self.name}_3clean'
+        net = Conv2D(64, (3, 3), padding='same', activation='relu', name='first_conv2D')(self.board_input)
+        net = Conv2D(64, (3, 3), padding='same', activation='relu', name='second_conv2D')(net)
+        net = Conv2D(64, (3, 3), padding='same', activation='relu', name='third_conv2D')(net)
 
         flat = Flatten(name='flat')(net)
         processed_board = Dense(512, name='processed_board')(flat)
 
         policy_hidden_layer = Dense(512, activation='relu', name='policy_hidden_layer')(processed_board)
-        policy_output = Dense(self.encoder.num_points(), activation='softmax', name='policy_output')(policy_hidden_layer)
+        policy_output = Dense(self.encoder.num_points(), activation='softmax', name='policy_output')(
+            policy_hidden_layer)
+
         value_hidden_layer = Dense(512, activation='relu', name='value_hidden_layer')(processed_board)
         value_output = Dense(1, activation='tanh', name='value_output')(value_hidden_layer)
+
         return policy_output, value_output
-
-        # net = Conv2D(64, (3, 3), padding='same', activation='relu', name='first_conv2D')(self.board_input)
-        # net = Conv2D(64, (3, 3), padding='same', activation='relu', name='second_conv2D')(net)
-        # net = Conv2D(64, (3, 3), padding='same', activation='relu', name='third_conv2D')(net)
-        #
-        # flat = Flatten(name='flat')(net)
-        # processed_board = Dense(512, name='processed_board')(flat)
-        #
-        # policy_hidden_layer = Dense(512, activation='relu', name='policy_hidden_layer')(processed_board)
-        # policy_output = Dense(self.encoder.num_points(), activation='softmax', name='policy_output')(policy_hidden_layer)
-        # value_hidden_layer = Dense(512, activation='relu', name='value_hidden_layer')(processed_board)
-        # value_output = Dense(1, activation='tanh', name='value_output')(value_hidden_layer)
-        # return policy_output, value_output
-
-
 
 
 class TrainerNetwork:
@@ -70,10 +68,7 @@ class TrainerNetwork:
         self.output = self.define_layers(l2(0.01))
 
     def define_layers(self, reg_lambda):
-
         # trainer3a: 0.0035 -> 0.0045 -> 0.0025 (BEZNADZIEJA!)
-
-        # conv_regularizer = l2(0.01)
 
         net = ZeroPadding2D(padding=3)(self.board_input)
         net = Conv2D(48, (7, 7), kernel_regularizer=reg_lambda)(net)
@@ -105,7 +100,6 @@ class TrainerNetwork:
         output = Dense(self.num_classes, activation='softmax')(flat)
 
         return output
-
 
         # trainer3b: 100/3:     0.0052 -> 0.0028 -> 0.0026 (BEZNADZIEJA!)
         # trainer3b: 1000/3:    0.0060 -> 0.0073 -> 0.0087
@@ -188,8 +182,6 @@ class TrainerNetwork:
         #
         # return output
 
-
-
 # class TrainerNetwork:
 #     def __init__(self, encoder):
 #         self.encoder = encoder
@@ -198,23 +190,20 @@ class TrainerNetwork:
 #         self.name = 'trainer2'
 #         self.output = self.define_layers()
 
-        # trainer: steady but slow progress / tried on laptops
-        # net = ZeroPadding2D(padding=3)(self.board_input)
-        # net = Conv2D(48, (7, 7), activation='relu')(net)
-        #
-        # net = ZeroPadding2D(padding=2)(net)
-        # net = Conv2D(32, (5, 5), activation='relu')(net)
-        #
-        # net = ZeroPadding2D(padding=2)(net)
-        # net = Conv2D(32, (5, 5), activation='relu')(net)
-        #
-        # net = ZeroPadding2D(padding=2)(net)
-        # net = Conv2D(32, (5, 5), activation='relu')(net)
-        #
-        # flat = Flatten()(net)
-        # output = Dense(self.num_classes, activation='softmax')(flat)
-        #
-        # return output
-
-
-
+# trainer: steady but slow progress / tried on laptops
+# net = ZeroPadding2D(padding=3)(self.board_input)
+# net = Conv2D(48, (7, 7), activation='relu')(net)
+#
+# net = ZeroPadding2D(padding=2)(net)
+# net = Conv2D(32, (5, 5), activation='relu')(net)
+#
+# net = ZeroPadding2D(padding=2)(net)
+# net = Conv2D(32, (5, 5), activation='relu')(net)
+#
+# net = ZeroPadding2D(padding=2)(net)
+# net = Conv2D(32, (5, 5), activation='relu')(net)
+#
+# flat = Flatten()(net)
+# output = Dense(self.num_classes, activation='softmax')(flat)
+#
+# return output

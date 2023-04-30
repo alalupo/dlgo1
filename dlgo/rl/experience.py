@@ -17,44 +17,18 @@ class EpisodeExperienceCollector(object):
         self._current_episode_states = []
         self._current_episode_actions = []
         self._current_episode_estimated_values = []
-        self.cleaning()
         self.max_advantage = 0.0
-
-    def cleaning(self):
-        exp_file = Path(self.str_h5file)
-        if Path(exp_file).is_file():
-            Path.unlink(exp_file)
 
     def __len__(self):
         with h5py.File(self.str_h5file, "r") as f:
-            return np.floor(f['experience/states'].shape[0])
+            return int(f['experience/states'].shape[0])
 
     @staticmethod
     def get_buffer_data(states, actions, rewards, advantages):
         return np.array(states), np.array(actions), np.array(rewards), np.array(advantages)
 
-    @staticmethod
-    def show_size(array):
-        logging.info(f'EXPERIENCE COLLECTOR: {round(array.nbytes / 1000000, 2)} MB')
-
-    @staticmethod
-    def combine_experience(collectors):
-        total_states = []
-        total_actions = []
-        total_rewards = []
-        total_advantages = []
-        for c in collectors:
-            with h5py.File(c.str_h5file, 'r') as f:
-                total_states.append(np.array(f['experience/states']))
-                total_actions.append(np.array(f['experience/actions']))
-                total_rewards.append(np.array(f['experience/rewards']))
-                total_advantages.append(np.array(f['experience/advantages']))
-        combined_states = np.concatenate([s for s in total_states])
-        combined_actions = np.concatenate([a for a in total_actions])
-        combined_rewards = np.concatenate([r for r in total_rewards])
-        combined_advantages = np.concatenate([adv for adv in total_advantages])
-
-        return combined_states, combined_actions, combined_rewards, combined_advantages
+    def show_size(self):
+        logging.info(f'EXPERIENCE COLLECTOR: {round(np.array(self._current_episode_states).nbytes / 1000000, 2)} MB')
 
     def begin_episode(self):
         self._current_episode_states = []
@@ -81,11 +55,10 @@ class EpisodeExperienceCollector(object):
                                                                     self._current_episode_actions,
                                                                     rewards,
                                                                     advantages)
-        # states = np.transpose(states, (0, 2, 3, 1))
+        self.show_size()
         self._current_episode_states = []
         self._current_episode_actions = []
         self._current_episode_estimated_values = []
-        self.show_size(states)
         with h5py.File(self.str_h5file, "a") as f:
             self.serialize(f, states, actions, rewards, advantages)
 
