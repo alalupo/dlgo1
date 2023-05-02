@@ -1,23 +1,19 @@
 import logging.config
-import sys
 import unittest
-import time
 from pathlib import Path
 import os
 
 import h5py
 import numpy as np
-import matplotlib.pyplot as plt
 import tensorflow as tf
 
 keras = tf.keras
 from keras.models import load_model
-from keras.callbacks import ModelCheckpoint
 
 from dlgo.gotypes import Player
 from dlgo.exp.exp_reader import ExpGenerator
 from dlgo.goboard_fast import GameState
-from dlgo.rl.experience import EpisodeExperienceCollector
+from exp.experience import EpisodeExperienceCollector
 from dlgo.tools.board_decoder import BoardDecoder
 from init_ac_agent import Initiator
 from self_play import SelfPlayer

@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 keras = tf.keras
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adam
 
 from dlgo.goboard_fast import Move
 from dlgo.agent.base import Agent
@@ -48,7 +48,7 @@ class ACAgent(Agent):
         estimated_value = estimated_value.numpy()
         self.last_state_value = float(estimated_value)
 
-        eps = 1e-5
+        eps = 3e-5
         move_probs = (1 - eps) * move_probs + eps / num_moves
         move_probs = np.clip(move_probs, eps, 1 - eps)
         move_probs = move_probs / np.sum(move_probs)
@@ -81,7 +81,7 @@ class ACAgent(Agent):
         self.model.compile(
             optimizer=opt,
             loss=['categorical_crossentropy', 'huber_loss'],
-            loss_weights=[1, 0.6])
+            loss_weights=[1, 0.5])
 
         history = self.model.fit(
             experience.generate(),

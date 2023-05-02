@@ -8,7 +8,7 @@ import h5py
 import tensorflow as tf
 
 keras = tf.keras
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adam
 from keras.models import Model, save_model
 
 from dlgo.tools.file_finder import FileFinder
@@ -39,7 +39,7 @@ class Initiator:
         self.board_size = board_size
         self.encoder = get_encoder_by_name('simple', self.board_size)
         self.network = AgentCriticNetwork(encoder=self.encoder)
-        self.model_filename = f'model_ac_bs{self.board_size}_{self.network.name}_v1.h5'
+        self.model_filename = f'model_bs{self.board_size}_{self.network.name}_v1.h5'
         self.model_out_path = self.get_model_path(self.model_filename)
         self.learning_rate = learning_rate
         logger.info(f'BOARD SIZE: {self.board_size}')
@@ -61,7 +61,7 @@ class Initiator:
         model.compile(
             optimizer=opt,
             loss=['categorical_crossentropy', 'huber_loss'],
-            loss_weights=[1, 0.6])
+            loss_weights=[1, 0.5])
 
         with h5py.File(self.model_out_path, 'w') as outf:
             save_model(filepath=outf, model=model, save_format='h5')

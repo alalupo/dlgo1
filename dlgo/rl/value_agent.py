@@ -1,8 +1,10 @@
 import numpy as np
+import logging.config
+import tensorflow as tf
 
+keras = tf.keras
 from keras.optimizers import SGD
 
-from dlgo import encoders
 from dlgo.goboard_fast import Move
 from dlgo.agent import Agent
 from dlgo.agent.helpers import is_point_an_eye
@@ -10,6 +12,8 @@ from dlgo.agent.helpers import is_point_an_eye
 __all__ = [
     'ValueAgent',
 ]
+
+logger = logging.getLogger('acTrainingLogger')
 
 
 class ValueAgent(Agent):
@@ -35,47 +39,49 @@ class ValueAgent(Agent):
         self.policy = policy
 
     def select_move(self, game_state):
-
         # Loop over all legal moves.
         moves = []
         board_tensors = []
+        board_tensor = None
         for move in game_state.legal_moves():
             if not move.is_play:
                 continue
             next_state = game_state.apply_move(move)
             board_tensor = self.encoder.encode(next_state)
+            board_tensor = np.transpose(board_tensor, (1, 2, 0))
             moves.append(move)
             board_tensors.append(board_tensor)
         if not moves:
             return Move.pass_turn()
 
-        # num_moves = len(moves)
         board_tensors = np.array(board_tensors)
-
         # Values of the next state from opponent's view.
         opp_values = self.model.predict(board_tensors)
+        # opp_values = self.model(board_tensors)
+        # opp_values = opp_values.numpy()
         opp_values = opp_values.reshape(len(moves))
 
         # Values from our point of view.
         values = 1 - opp_values
 
+        ranked_moves = np.array([])
         if self.policy == 'eps-greedy':
-            ranked_moves = self.rank_moves_eps_greedy(values)
+            ranked_moves = np.concatenate([ranked_moves, self.rank_moves_eps_greedy(values)])
         elif self.policy == 'weighted':
-            ranked_moves = self.rank_moves_weighted(values)
+            ranked_moves = np.concatenate([ranked_moves, self.rank_moves_weighted(values)])
 
         for move_idx in ranked_moves:
             move = moves[move_idx]
-            if not is_point_an_eye(game_state.board,
-                                   move.point,
-                                   game_state.next_player):
-                if self.collector is not None:
-                    self.collector.record_decision(
-                        state=board_tensor,
-                        action=self.encoder.encode_point(move.point),
-                    )
-                self.last_move_value = float(values[move_idx])
-                return move
+            fills_own_eye = is_point_an_eye(game_state.board, move.point, game_state.next_player)
+            if fills_own_eye:
+                continue
+            if self.collector is not None and board_tensor is not None:
+                self.collector.record_decision(
+                    state=board_tensor,
+                    action=self.encoder.encode_point(move.point),
+                )
+            self.last_move_value = float(values[move_idx])
+            return move
         # No legal, non-self-destructive moves less.
         return Move.pass_turn()
 
@@ -97,42 +103,24 @@ class ValueAgent(Agent):
             p=p,
             replace=False)
 
-    def train(self, experience, lr=0.1, batch_size=128):
-        opt = SGD(lr=lr)
-        self.model.compile(loss='mse', optimizer=opt)
+    def train(self, experience, lr, batch_size=128):
+        opt = SGD(learning_rate=lr, clipnorm=1)
+        self.model.compile(optimizer=opt, loss='huber_loss')
 
-        n = experience.states.shape[0]
-        # num_moves = self.encoder.num_points()
-        y = np.zeros((n,))
-        for i in range(n):
-            reward = experience.rewards[i]
-            y[i] = 1 if reward > 0 else 0
-
-        self.model.fit(
-            experience.states, y,
+        history = self.model.fit(
+            experience.generate(),
+            steps_per_epoch=len(experience),
             batch_size=batch_size,
-            epochs=1)
+            verbose=1,
+            epochs=1,
+            shuffle=False,
+        )
 
-    # def serialize(self, h5file):
-    #     h5file.create_group('encoder')
-    #     h5file['encoder'].attrs['name'] = self.encoder.name()
-    #     h5file['encoder'].attrs['board_width'] = self.encoder.board_width
-    #     h5file['encoder'].attrs['board_height'] = self.encoder.board_height
-    #     h5file.create_group('model')
-    #     kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
+        logger.info(f'Model name: {self.model.name}')
+        logger.info(f'Model inputs: {self.model.inputs}')
+        logger.info(f'Model outputs: {self.model.outputs}')
+
+        # logger.info(f'{self.model.summary()}')
 
     def diagnostics(self):
         return {'value': self.last_move_value}
-
-
-# def load_value_agent(h5file):
-#     model = kerasutil.load_model_from_hdf5_group(h5file['model'])
-#     encoder_name = h5file['encoder'].attrs['name']
-#     if not isinstance(encoder_name, str):
-#         encoder_name = encoder_name.decode('ascii')
-#     board_width = h5file['encoder'].attrs['board_width']
-#     board_height = h5file['encoder'].attrs['board_height']
-#     encoder = encoders.get_encoder_by_name(
-#         encoder_name,
-#         (board_width, board_height))
-#     return ValueAgent(model, encoder)

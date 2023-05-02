@@ -1,5 +1,3 @@
-"""Policy gradient learning."""
-
 import numpy as np
 import tensorflow as tf
 keras = tf.keras
@@ -32,11 +30,11 @@ def prepare_experience_data(experience, board_width, board_height):
 
 
 class PolicyAgent(Agent):
-    """An agent that uses a deep policy network to select moves."""
+    """Policy gradient learning agent."""
 
     def __init__(self, model, encoder):
         super().__init__()
-        self._model = model
+        self.model = model
         self._encoder = encoder
         self._collector = None
         self._temperature = 0.0
@@ -53,7 +51,7 @@ class PolicyAgent(Agent):
 
     def predict_move(self, game_state, board_tensor):
         X = np.array([board_tensor])
-        return self._model.predict([X], verbose=0)[0][0]
+        return self.model.predict([X], verbose=0)[0][0]
 
     def select_move(self, game_state):
         num_moves = self._encoder.board_width * self._encoder.board_height
@@ -90,7 +88,7 @@ class PolicyAgent(Agent):
         return Move.pass_turn()
 
     def train(self, experience, lr, clipnorm, batch_size):
-        self._model.compile(
+        self.model.compile(
             loss='categorical_crossentropy',
             optimizer=SGD(lr=lr, clipnorm=clipnorm))
 
@@ -99,7 +97,8 @@ class PolicyAgent(Agent):
             self._encoder.board_width,
             self._encoder.board_height)
 
-        self._model.fit(
+        self.model.fit(
             experience.states, target_vectors,
             batch_size=batch_size,
             epochs=1)
+

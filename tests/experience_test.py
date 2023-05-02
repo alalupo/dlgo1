@@ -11,7 +11,7 @@ import tensorflow as tf
 keras = tf.keras
 
 from dlgo.exp.exp_reader import ExpGenerator
-from dlgo.rl.experience import EpisodeExperienceCollector
+from exp.experience import EpisodeExperienceCollector
 from dlgo.tools.board_decoder import BoardDecoder
 from init_ac_agent import Initiator
 from self_play import SelfPlayer

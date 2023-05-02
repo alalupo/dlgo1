@@ -75,7 +75,7 @@ def main():
     # optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
     optimizer = tf.keras.optimizers.Adagrad()
     loss_function = 'categorical_crossentropy'
-    batch_size = 32
+    batch_size = 128
 
     show_intro()
     logger.info(f'GAMES: {num_games}')

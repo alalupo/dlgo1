@@ -1,4 +1,3 @@
-from pathlib import Path
 import logging
 
 import h5py
@@ -99,14 +98,3 @@ class EpisodeExperienceCollector(object):
             h5file['experience'].create_dataset(name='rewards', data=rewards, maxshape=(None,))
             h5file['experience'].create_dataset(name='advantages', data=advantages, maxshape=(None,))
             h5file['experience'].create_dataset(name='max_advantage', data=self.max_advantage, dtype='float32')
-
-
-            # h5file['experience/states'].resize((h5file['experience/states'].shape[0] + states.shape[0]), axis=0)
-            # h5file['experience/states'][-states.shape[0]:] = states
-            # h5file['experience/actions'].resize((h5file['experience/actions'].shape[0] + actions.shape[0]), axis=0)
-            # h5file['experience/actions'][-actions.shape[0]:] = actions
-            # h5file['experience/rewards'].resize((h5file['experience/rewards'].shape[0] + rewards.shape[0]), axis=0)
-            # h5file['experience/rewards'][-rewards.shape[0]:] = rewards
-            # h5file['experience/advantages'].resize(
-            #     (h5file['experience/advantages'].shape[0] + advantages.shape[0]), axis=0)
-            # h5file['experience/advantages'][-advantages.shape[0]:] = advantages

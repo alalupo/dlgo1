@@ -1,11 +1,10 @@
 import h5py
 import numpy as np
 import tensorflow as tf
-keras = tf.keras
 
 
 class ExpGenerator:
-    def __init__(self, exp_file, batch_size, num_planes, board_size, seed=None):
+    def __init__(self, exp_file, batch_size, num_planes, board_size, seed=1234, ac=True):
         self.exp_file = exp_file
         self.batch_size = batch_size
         self.num_planes = num_planes
@@ -13,6 +12,7 @@ class ExpGenerator:
         self.num_moves = board_size * board_size
         self.seed = seed
         self.num_classes = self.board_size * self.board_size
+        self.actor_critic = ac
 
     def __len__(self):
         with h5py.File(self.exp_file, 'r') as f:
@@ -22,18 +22,19 @@ class ExpGenerator:
         with h5py.File(self.exp_file, 'r') as f:
             return len(f['experience/states'])
 
-    # def generate(self):
-    #     while True:
-    #         for item in self._generate():
-    #             yield item
-
     def generate(self):
         while True:
-            for states, targets in self._generate():
-                x = tf.convert_to_tensor(states, dtype=tf.float32)
-                y1 = tf.convert_to_tensor(targets[0], dtype=tf.float32)
-                y2 = tf.convert_to_tensor(targets[1], dtype=tf.float32)
-                yield x, (y1, y2)
+            if self.actor_critic:
+                for states, targets in self._generate():
+                    x = tf.convert_to_tensor(states, dtype=tf.float32)
+                    y1 = tf.convert_to_tensor(targets[0], dtype=tf.float32)
+                    y2 = tf.convert_to_tensor(targets[1], dtype=tf.float32)
+                    yield x, (y1, y2)
+            else:
+                for states, value in self._generate():
+                    x = tf.convert_to_tensor(states, dtype=tf.float32)
+                    y = tf.convert_to_tensor(value, dtype=tf.float32)
+                    yield x, y
 
     def _generate(self):
         with h5py.File(self.exp_file, 'r') as f:
@@ -57,7 +58,9 @@ class ExpGenerator:
                         policy_target[j][action] = advantage
                     value_target[j] = reward
                 targets = [policy_target, value_target]
-                yield states, targets
-
-
+                if self.actor_critic:
+                    yield states, targets
+                else:
+                    value_target[value_target == -1] = 0
+                    yield states, value_target
 

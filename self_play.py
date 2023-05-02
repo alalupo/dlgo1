@@ -12,7 +12,7 @@ import tensorflow as tf
 keras = tf.keras
 from keras.models import load_model
 
-from dlgo.rl.experience import EpisodeExperienceCollector
+from exp.experience import EpisodeExperienceCollector
 from dlgo import scoring
 from dlgo.rl.ac import ACAgent
 from dlgo.encoders.base import get_encoder_by_name
