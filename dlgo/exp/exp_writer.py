@@ -4,11 +4,11 @@ import h5py
 import numpy as np
 
 __all__ = [
-    'EpisodeExperienceCollector',
+    'ExpWriter',
 ]
 
 
-class EpisodeExperienceCollector(object):
+class ExpWriter:
     def __init__(self, h5file, board_size, num_planes):
         self.str_h5file = h5file
         self.board_size = board_size

@@ -1,7 +1,13 @@
+import operator
 import numpy as np
+
 from dlgo.agent.base import Agent
 from dlgo.goboard_fast import Move
-import operator
+from dlgo.encoders.base import get_encoder_by_name
+from dlgo.agent.predict import DeepLearningAgent
+from dlgo.agent.pg import PolicyAgent
+from dlgo.rl.value_agent import ValueAgent
+
 
 __all__ = [
     'MCTSNode',
@@ -13,7 +19,6 @@ class MCTSNode:
     def __init__(self, parent=None, probability=1.0):
         self.parent = parent
         self.children = {}
-
         self.visit_count = 0
         self.q_value = 0
         self.prior_value = probability
@@ -43,17 +48,19 @@ class MCTSNode:
 
 
 class MCTSAgent(Agent):
-    def __init__(self, policy_agent, fast_policy_agent, value_agent, lambda_value=0.5, num_simulations=1000, depth=50,
-                 rollout_limit=100):
+    def __init__(self, strong_policy_model, fast_policy_model, value_model, lambda_value=0.5, num_simulations=25,
+                 depth=5, rollout_limit=3):
         super().__init__()
-        self.policy = policy_agent
-        self.rollout_policy = fast_policy_agent
-        self.value = value_agent
+        self.encoder = get_encoder_by_name('simple', 19)
+        self.policy = PolicyAgent(strong_policy_model, self.encoder)
+        self.rollout_policy = DeepLearningAgent(fast_policy_model, self.encoder)
+        self.value = ValueAgent(value_model, self.encoder)
         self.lambda_value = lambda_value
         self.num_simulations = num_simulations
         self.depth = depth
         self.rollout_limit = rollout_limit
         self.root = MCTSNode()
+        self.last_state_value = 0
 
     def select_move(self, game_state):
         for simulation in range(self.num_simulations):
@@ -88,7 +95,7 @@ class MCTSAgent(Agent):
         return move
 
     def policy_probabilities(self, game_state):
-        encoder = self.policy._encoder
+        encoder = self.policy.encoder
         outputs = self.policy.predict(game_state)
         legal_moves = game_state.legal_moves()
         if not legal_moves:
@@ -118,6 +125,9 @@ class MCTSAgent(Agent):
             return 1 if winner == next_player else -1
         else:
             return 0
+
+    def diagnostics(self):
+        return {'value': self.last_state_value}
 
     def serialize(self, h5file):
         raise IOError("MCTS agent can\'t be serialized")

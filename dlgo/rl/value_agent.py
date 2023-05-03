@@ -24,8 +24,10 @@ class ValueAgent(Agent):
         self.collector = None
         self.temperature = 0.0
         self.policy = policy
-
         self.last_move_value = 0
+        self.learning_rate = 0.007
+        self.optimizer = tf.keras.optimizers.SGD(learning_rate=self.learning_rate)
+        self.loss_function = 'huber_loss'
 
     def set_temperature(self, temperature):
         self.temperature = temperature
@@ -37,6 +39,13 @@ class ValueAgent(Agent):
         if policy not in ('eps-greedy', 'weighted'):
             raise ValueError(policy)
         self.policy = policy
+
+    def predict(self, game_state):
+        board_tensor = self.encoder.encode(game_state)
+        board_tensor = np.transpose(board_tensor, (1, 2, 0))
+        X = np.array([board_tensor])
+        # return self.model.predict(input_tensor)[0]
+        return self.model(X)[0][0].numpy()
 
     def select_move(self, game_state):
         # Loop over all legal moves.
@@ -103,13 +112,12 @@ class ValueAgent(Agent):
             p=p,
             replace=False)
 
-    def train(self, experience, lr, batch_size=128):
-        opt = SGD(learning_rate=lr, clipnorm=1)
-        self.model.compile(optimizer=opt, loss='huber_loss')
+    def train(self, gen, batch_size=128):
+        self.model.compile(optimizer=self.optimizer, loss=self.loss_function)
 
         history = self.model.fit(
-            experience.generate(),
-            steps_per_epoch=len(experience),
+            gen.generate(),
+            steps_per_epoch=len(gen),
             batch_size=batch_size,
             verbose=1,
             epochs=1,

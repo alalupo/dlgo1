@@ -118,11 +118,11 @@ class SLTrainer:
                            metrics=['accuracy'])
         print(f'>>>Model fitting...')
         callback = ModelCheckpoint(self.model_dir +
-                                   '/model_' +
+                                   '/model_sl_' +
                                    network_name + '_' +
                                    str(self.num_games) + '_' +
                                    str(self.epochs) + '_' +
-                                   '_epoch{epoch}.h5',
+                                   'epoch{epoch}.h5',
                                    save_weights_only=False,
                                    save_best_only=True)
         train_steps = train_generator.get_num_samples(batch_size=self.batch_size) // self.batch_size

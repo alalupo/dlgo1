@@ -12,7 +12,7 @@ import tensorflow as tf
 keras = tf.keras
 from keras.models import load_model
 
-from exp.experience import EpisodeExperienceCollector
+from exp.exp_writer import ExpWriter
 from dlgo import scoring
 from dlgo.rl.ac import ACAgent
 from dlgo.encoders.base import get_encoder_by_name
@@ -88,8 +88,8 @@ class SelfPlayer:
         print(f'>>>Creating two bots from the model: {self.model_path}')
         agent1 = self.create_bot(1)
         agent2 = self.create_bot(2)
-        collector1 = EpisodeExperienceCollector(self.exp_path, self.board_size, self.encoder.num_planes)
-        collector2 = EpisodeExperienceCollector(self.exp_path, self.board_size, self.encoder.num_planes)
+        collector1 = ExpWriter(self.exp_path, self.board_size, self.encoder.num_planes)
+        collector2 = ExpWriter(self.exp_path, self.board_size, self.encoder.num_planes)
         agent1.set_collector(collector1)
         agent2.set_collector(collector2)
 

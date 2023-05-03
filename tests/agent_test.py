@@ -11,9 +11,9 @@ keras = tf.keras
 from keras.models import load_model
 
 from dlgo.gotypes import Player
-from dlgo.exp.exp_reader import ExpGenerator
+from dlgo.exp.exp_reader import ExpReader
 from dlgo.goboard_fast import GameState
-from exp.experience import EpisodeExperienceCollector
+from exp.exp_writer import ExpWriter
 from dlgo.tools.board_decoder import BoardDecoder
 from init_ac_agent import Initiator
 from self_play import SelfPlayer
@@ -39,7 +39,7 @@ class ACAgentTest(unittest.TestCase):
         self.new_model_name = 'new_model_ac_agent_test.h5'
         self.model_path = self.project_path / 'models' / self.model_name
         self.new_model_path = self.project_path / 'models' / self.new_model_name
-        self.collector = EpisodeExperienceCollector(self.exp_path, self.board_size, self.num_planes)
+        self.collector = ExpWriter(self.exp_path, self.board_size, self.num_planes)
         self.prepare_exp_by_self_play()
 
     def tearDown(self):
@@ -54,7 +54,7 @@ class ACAgentTest(unittest.TestCase):
 
     def create_bot(self, player, num):
         ac_bot = player.create_bot(num)
-        collector = EpisodeExperienceCollector(self.exp_path, self.board_size, self.num_planes)
+        collector = ExpWriter(self.exp_path, self.board_size, self.num_planes)
         ac_bot.set_collector(collector)
         return ac_bot
 
@@ -169,7 +169,7 @@ class ACAgentTest(unittest.TestCase):
 
         # trained_model = load_model(self.new_model_path)
 
-        generator = ExpGenerator(self.exp_path, self.batch_size, self.num_planes, self.board_size, seed=1234)
+        generator = ExpReader(self.exp_path, self.batch_size, self.num_planes, self.board_size, seed=1234)
         steps_per_epoch = len(generator)
         print(f'The length of the generator (steps per epoch) = {steps_per_epoch}')
 
@@ -315,7 +315,7 @@ class ACAgentTest(unittest.TestCase):
         #  a new model created through training
         model = load_model(self.new_model_path)
 
-        generator = ExpGenerator(self.exp_path, self.batch_size, self.num_planes, self.board_size, seed=1234)
+        generator = ExpReader(self.exp_path, self.batch_size, self.num_planes, self.board_size, seed=1234)
         steps_per_epoch = len(generator)
         print(f'The length of the generator (steps per epoch) = {steps_per_epoch}')
 

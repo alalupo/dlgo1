@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 
-class ExpGenerator:
+class ExpReader:
     def __init__(self, exp_file, batch_size, num_planes, board_size, seed=1234, client='ac'):
         self.exp_file = exp_file
         self.batch_size = batch_size

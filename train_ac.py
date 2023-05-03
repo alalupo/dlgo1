@@ -15,7 +15,7 @@ from keras.models import load_model, save_model
 from dlgo.tools.file_finder import FileFinder
 from dlgo.rl.ac import ACAgent
 from dlgo.encoders.base import get_encoder_by_name
-from dlgo.exp.exp_reader import ExpGenerator
+from dlgo.exp.exp_reader import ExpReader
 
 logger = logging.getLogger('acTrainingLogger')
 
@@ -88,11 +88,11 @@ class ACTrainer:
         for exp_filename in self.exp_paths:
             print(f'')
             print(f'>>>LOADING EXPERIENCE: {exp_filename}')
-            generator = ExpGenerator(exp_file=exp_filename,
-                                     batch_size=self.batch_size,
-                                     num_planes=self.encoder.num_planes,
-                                     board_size=self.board_size,
-                                     seed=1234)
+            generator = ExpReader(exp_file=exp_filename,
+                                  batch_size=self.batch_size,
+                                  num_planes=self.encoder.num_planes,
+                                  board_size=self.board_size,
+                                  seed=1234)
             print(f'>>>MODEL TRAINING')
             learning_agent.train(
                 generator,

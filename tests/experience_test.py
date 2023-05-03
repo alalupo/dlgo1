@@ -10,8 +10,8 @@ import tensorflow as tf
 
 keras = tf.keras
 
-from dlgo.exp.exp_reader import ExpGenerator
-from exp.experience import EpisodeExperienceCollector
+from dlgo.exp.exp_reader import ExpReader
+from exp.exp_writer import ExpWriter
 from dlgo.tools.board_decoder import BoardDecoder
 from init_ac_agent import Initiator
 from self_play import SelfPlayer
@@ -30,7 +30,7 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
         self.exp_path = self.project_path / 'exp' / f'exp_{self.num_games}_experience_test.h5'
         self.model_name = 'model_experience_test.h5'
         self.model_full_path = self.project_path / 'models' / self.model_name
-        self.collector = EpisodeExperienceCollector(self.exp_path, self.board_size, self.num_planes)
+        self.collector = ExpWriter(self.exp_path, self.board_size, self.num_planes)
         # self.clean_up()
 
     def tearDown(self):
@@ -83,7 +83,7 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
         player = SelfPlayer(self.board_size, self.model_name, self.num_games)
         player.play()
 
-        gen = ExpGenerator(self.exp_path, 32, self.num_planes, self.board_size)
+        gen = ExpReader(self.exp_path, 32, self.num_planes, self.board_size)
         length = gen.num_states()
         print(f'The length of the experience file (the number of states/positions): {length}')
         next_batch = gen.generate()
@@ -106,7 +106,7 @@ class EpisodeExperienceCollectorTest(unittest.TestCase):
         print(f'THE CONTENT OF THE EXP FILE:')
         print(f'*' * 40)
 
-        gen = ExpGenerator(self.exp_path, 32, self.num_planes, self.board_size, seed=1234)
+        gen = ExpReader(self.exp_path, 32, self.num_planes, self.board_size, seed=1234)
         length = gen.num_states()
         print(f'LENGTH: {length}')
         next_batch = gen.generate()

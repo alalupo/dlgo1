@@ -35,7 +35,7 @@ class PolicyAgent(Agent):
     def __init__(self, model, encoder):
         super().__init__()
         self.model = model
-        self._encoder = encoder
+        self.encoder = encoder
         self._collector = None
         self._temperature = 0.0
         self.last_state_value = 0
@@ -49,20 +49,26 @@ class PolicyAgent(Agent):
     def set_collector(self, collector):
         self._collector = collector
 
-    def predict_move(self, game_state, board_tensor):
+    def predict(self, game_state):
+        board_tensor = self.encoder.encode(game_state)
+        board_tensor = np.transpose(board_tensor, (1, 2, 0))
         X = np.array([board_tensor])
-        return self.model.predict([X], verbose=0)[0][0]
+        # return self.model.predict(input_tensor)[0]
+        return self.model(X)[0].numpy()
 
     def select_move(self, game_state):
-        num_moves = self._encoder.board_width * self._encoder.board_height
-        board_tensor = self._encoder.encode(game_state)
+        num_moves = self.encoder.board_width * self.encoder.board_height
+        board_tensor = self.encoder.encode(game_state)
         board_tensor = np.transpose(board_tensor, (1, 2, 0))
+        X = np.array([board_tensor])
         if np.random.random() < self._temperature:
             # Explore random moves.
             move_probs = np.ones(num_moves) / num_moves
         else:
             # Follow our current policy.
-            move_probs = self.model.predict(board_tensor)[0]
+            # move_probs = self.model.predict(X, verbose=0)[0]
+            move_probs = self.model(X)[0]
+            move_probs = move_probs.numpy()
 
         # Prevent move probs from getting stuck at 0 or 1.
         eps = 1e-5
@@ -74,7 +80,7 @@ class PolicyAgent(Agent):
         candidates = np.arange(num_moves)
         ranked_moves = np.random.choice(candidates, num_moves, replace=False, p=move_probs)
         for point_idx in ranked_moves:
-            point = self._encoder.decode_point_index(point_idx)
+            point = self.encoder.decode_point_index(point_idx)
             move = Move.play(point)
             move_is_valid = game_state.is_valid_move(move)
             fills_own_eye = is_point_an_eye(game_state.board, point, game_state.next_player)
@@ -94,8 +100,8 @@ class PolicyAgent(Agent):
 
     def train(self, gen, lr, clipnorm, batch_size):
 
-        opt = SGD(learning_rate=lr, clipnorm=1)
-        self.model.compile(optimizer=opt, loss='categorical_crossentropy', learning_rate=lr, clipnorm=clipnorm)
+        opt = SGD(learning_rate=lr, clipnorm=clipnorm)
+        self.model.compile(optimizer=opt, loss='categorical_crossentropy')
 
         history = self.model.fit(
             gen.generate(),
