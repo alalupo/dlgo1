@@ -1,22 +1,22 @@
+import logging.config
+
 import numpy as np
 import tensorflow as tf
+
 keras = tf.keras
-from keras.models import load_model
 from keras.optimizers import SGD
 
 from dlgo.goboard_fast import Move
 from dlgo.agent.base import Agent
 from dlgo.agent.helpers import is_point_an_eye
+
 # from dlgo.tools.board_decoder import BoardDecoder
 
 __all__ = [
     'PolicyAgent'
 ]
 
-
-def normalize(x):
-    total = np.sum(x)
-    return x / total
+logger = logging.getLogger('acTrainingLogger')
 
 
 def prepare_experience_data(experience, board_width, board_height):
@@ -61,7 +61,9 @@ class PolicyAgent(Agent):
             # Explore random moves.
             move_probs = np.ones(num_moves) / num_moves
         else:
-            move_probs = self.predict_move(game_state, board_tensor)
+            # Follow our current policy.
+            move_probs = self.model.predict(board_tensor)[0]
+
         # Prevent move probs from getting stuck at 0 or 1.
         eps = 1e-5
         move_probs = np.clip(move_probs, eps, 1 - eps)
@@ -70,35 +72,41 @@ class PolicyAgent(Agent):
 
         # Turn the probabilities into a ranked list of moves.
         candidates = np.arange(num_moves)
-        ranked_moves = np.random.choice(
-            candidates, num_moves, replace=False, p=move_probs)
+        ranked_moves = np.random.choice(candidates, num_moves, replace=False, p=move_probs)
         for point_idx in ranked_moves:
             point = self._encoder.decode_point_index(point_idx)
-            if not game_state.is_valid_move(Move.play(point)):
+            move = Move.play(point)
+            move_is_valid = game_state.is_valid_move(move)
+            fills_own_eye = is_point_an_eye(game_state.board, point, game_state.next_player)
+            if not move_is_valid:
                 continue
-            if not is_point_an_eye(game_state.board, point, game_state.next_player):
-                if self._collector is not None:
-                    self._collector.record_decision(state=board_tensor, action=point_idx)
-                    # decoder = BoardDecoder(board_tensor)
-                    # decoder.print()
-                    # print(f'')
-                    # print(f'point_idx: {self._encoder.decode_point_index(point_idx)}')
-                    return Move.play(point)
+            if fills_own_eye:
+                continue
+            if self._collector is not None:
+                self._collector.record_decision(state=board_tensor, action=point_idx)
+                # decoder = BoardDecoder(board_tensor)
+                # decoder.print()
+                # print(f'')
+                # print(f'point_idx: {self._encoder.decode_point_index(point_idx)}')
+            return Move.play(point)
         # No legal, non-self-destructive moves less.
         return Move.pass_turn()
 
-    def train(self, experience, lr, clipnorm, batch_size):
-        self.model.compile(
-            loss='categorical_crossentropy',
-            optimizer=SGD(lr=lr, clipnorm=clipnorm))
+    def train(self, gen, lr, clipnorm, batch_size):
 
-        target_vectors = prepare_experience_data(
-            experience,
-            self._encoder.board_width,
-            self._encoder.board_height)
+        opt = SGD(learning_rate=lr, clipnorm=1)
+        self.model.compile(optimizer=opt, loss='categorical_crossentropy', learning_rate=lr, clipnorm=clipnorm)
 
-        self.model.fit(
-            experience.states, target_vectors,
+        history = self.model.fit(
+            gen.generate(),
+            steps_per_epoch=len(gen),
             batch_size=batch_size,
-            epochs=1)
+            verbose=1,
+            epochs=1,
+            shuffle=False,
+        )
 
+        logger.info(f'Model name: {self.model.name}')
+        logger.info(f'Model inputs: {self.model.inputs}')
+        logger.info(f'Model outputs: {self.model.outputs}')
+        # logger.info(f'{self.model.summary()}')

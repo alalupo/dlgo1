@@ -4,7 +4,7 @@ import tensorflow as tf
 
 
 class ExpGenerator:
-    def __init__(self, exp_file, batch_size, num_planes, board_size, seed=1234, ac=True):
+    def __init__(self, exp_file, batch_size, num_planes, board_size, seed=1234, client='ac'):
         self.exp_file = exp_file
         self.batch_size = batch_size
         self.num_planes = num_planes
@@ -12,7 +12,7 @@ class ExpGenerator:
         self.num_moves = board_size * board_size
         self.seed = seed
         self.num_classes = self.board_size * self.board_size
-        self.actor_critic = ac
+        self.client = client
 
     def __len__(self):
         with h5py.File(self.exp_file, 'r') as f:
@@ -24,17 +24,23 @@ class ExpGenerator:
 
     def generate(self):
         while True:
-            if self.actor_critic:
+            if self.client == 'ac':
                 for states, targets in self._generate():
                     x = tf.convert_to_tensor(states, dtype=tf.float32)
                     y1 = tf.convert_to_tensor(targets[0], dtype=tf.float32)
                     y2 = tf.convert_to_tensor(targets[1], dtype=tf.float32)
                     yield x, (y1, y2)
-            else:
+            elif self.client == 'pg':
+                for states, targets in self._generate():
+                    x = tf.convert_to_tensor(states, dtype=tf.float32)
+                    y = tf.convert_to_tensor(targets, dtype=tf.float32)
+                    yield x, y
+            else:  # self.client == 'value'
                 for states, value in self._generate():
                     x = tf.convert_to_tensor(states, dtype=tf.float32)
                     y = tf.convert_to_tensor(value, dtype=tf.float32)
                     yield x, y
+
 
     def _generate(self):
         with h5py.File(self.exp_file, 'r') as f:
@@ -58,8 +64,10 @@ class ExpGenerator:
                         policy_target[j][action] = advantage
                     value_target[j] = reward
                 targets = [policy_target, value_target]
-                if self.actor_critic:
+                if self.client == 'ac':
                     yield states, targets
+                elif self.client == 'pg':
+                    yield states, policy_target
                 else:
                     value_target[value_target == -1] = 0
                     yield states, value_target

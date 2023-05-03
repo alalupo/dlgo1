@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import sys
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import argparse
@@ -12,7 +13,12 @@ keras = tf.keras
 from keras.models import Model
 from keras.callbacks import ModelCheckpoint
 
-from dlgo.data.parallel_processor import GoDataProcessor
+project_path = Path(__file__).resolve().parent.parent
+os.chdir(project_path)
+sys.path.append(str(project_path))
+sys.path.append(str(Path.cwd() / 'dlgo'))
+
+from dlgo.data.data_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.networks.network_architectures import FastPolicyNetwork, StrongPolicyNetwork
 
