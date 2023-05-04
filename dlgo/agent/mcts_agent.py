@@ -8,7 +8,6 @@ from dlgo.agent.predict import DeepLearningAgent
 from dlgo.agent.pg import PolicyAgent
 from dlgo.rl.value_agent import ValueAgent
 
-
 __all__ = [
     'MCTSNode',
     'MCTSAgent'
@@ -75,7 +74,6 @@ class MCTSAgent(Agent):
 
                 move, node = node.select_child()
                 current_state = current_state.apply_move(move)
-
             value = self.value.predict(current_state)
             rollout = self.policy_rollout(current_state)
 
@@ -111,8 +109,14 @@ class MCTSAgent(Agent):
                 break
             move_probabilities = self.rollout_policy.predict(game_state)
             encoder = self.rollout_policy.encoder
+
+            legal_moves = set(game_state.legal_moves())
             valid_moves = [m for idx, m in enumerate(move_probabilities)
-                           if Move(encoder.decode_point_index(idx)) in game_state.legal_moves()]
+                            if Move(encoder.decode_point_index(idx)) in legal_moves]
+
+            # valid_moves = [m for idx, m in enumerate(move_probabilities)
+            #                 if Move(encoder.decode_point_index(idx)) in game_state.legal_moves()]
+
             max_index, max_value = max(enumerate(valid_moves), key=operator.itemgetter(1))
             max_point = encoder.decode_point_index(max_index)
             greedy_move = Move(max_point)

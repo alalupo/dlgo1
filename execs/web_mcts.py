@@ -1,14 +1,13 @@
 from dlgo import httpfrontend
 from dlgo.agent.loader import Loader
 
-BOARD_SIZE = 5
-
 
 def main():
     loader = Loader('mcts')
-    bot = loader.create_bot()
+    agent = loader.create_bot()
+    bot = {'mcts': agent}
     web_app = httpfrontend.get_web_app(bot)
-    web_app.run()
+    web_app.run(port=5000, threaded=False)
 
 
 if __name__ == '__main__':

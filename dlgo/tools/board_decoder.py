@@ -7,8 +7,11 @@ from dlgo.utils import print_board
 
 class BoardDecoder:
     def __init__(self, board_tensor):
-        self.board_tensor = np.transpose(board_tensor, (2, 1, 0))
-        self.board_size = board_tensor.shape[0]
+        if board_tensor.shape == (19, 19, 11):
+            self.board_tensor = np.transpose(board_tensor, (2, 1, 0))
+        else:
+            self.board_tensor = np.asarray(board_tensor)
+        self.board_size = self.board_tensor.shape[1]
         self.map = np.zeros((self.board_size, self.board_size))
         self.set_map()
         self.board = Board(self.board_size, self.board_size)

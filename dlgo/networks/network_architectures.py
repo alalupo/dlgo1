@@ -153,18 +153,17 @@ class FastPolicyNetwork:
         self.output = self.define_layers(l2(0.01))
 
     def define_layers(self, reg_lambda):
-        # self.name = f'{self.name}_improved'
-        self.name = f'{self.name}_small'
+        self.name = f'{self.name}_improved'
 
         net = ZeroPadding2D(padding=3)(self.board_input)
         net = Conv2D(16, (7, 7))(net)
         net = BatchNormalization()(net)
         net = LeakyReLU(alpha=0.1)(net)
 
-        # net = ZeroPadding2D(padding=2)(net)
-        # net = Conv2D(32, (5, 5))(net)
-        # net = BatchNormalization()(net)
-        # net = LeakyReLU(alpha=0.1)(net)
+        net = ZeroPadding2D(padding=2)(net)
+        net = Conv2D(32, (5, 5))(net)
+        net = BatchNormalization()(net)
+        net = LeakyReLU(alpha=0.1)(net)
 
         flat = Flatten()(net)
         flat = Dropout(0.5)(flat)
