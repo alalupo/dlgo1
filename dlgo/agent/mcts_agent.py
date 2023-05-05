@@ -7,6 +7,7 @@ from dlgo.encoders.base import get_encoder_by_name
 from dlgo.agent.predict import DeepLearningAgent
 from dlgo.agent.pg import PolicyAgent
 from dlgo.rl.value_agent import ValueAgent
+from dlgo.utils import print_board
 
 __all__ = [
     'MCTSNode',
@@ -30,7 +31,7 @@ class MCTSNode:
     def expand_children(self, moves, probabilities):
         for move, prob in zip(moves, probabilities):
             if move not in self.children:
-                self.children[move] = MCTSNode(probability=prob)
+                self.children[move] = MCTSNode(parent=self, probability=prob)
 
     def update_values(self, leaf_value):
         if self.parent is not None:
@@ -38,7 +39,8 @@ class MCTSNode:
 
         self.visit_count += 1
 
-        self.q_value += leaf_value / self.visit_count
+        # self.q_value += leaf_value / self.visit_count
+        self.q_value = (self.q_value * (self.visit_count - 1) + leaf_value) / self.visit_count
 
         if self.parent is not None:
             c_u = 5
@@ -47,8 +49,8 @@ class MCTSNode:
 
 
 class MCTSAgent(Agent):
-    def __init__(self, strong_policy_model, fast_policy_model, value_model, lambda_value=0.5, num_simulations=25,
-                 depth=5, rollout_limit=3):
+    def __init__(self, strong_policy_model, fast_policy_model, value_model, lambda_value=0.5, num_simulations=30,
+                 depth=10, rollout_limit=10):
         super().__init__()
         self.encoder = get_encoder_by_name('simple', 19)
         self.policy = PolicyAgent(strong_policy_model, self.encoder)
@@ -62,6 +64,11 @@ class MCTSAgent(Agent):
         self.last_state_value = 0
 
     def select_move(self, game_state):
+        if game_state.previous_state is not None:
+            print(f'')
+            print(f'game state:')
+            print_board(game_state.board)
+            print(f'')
         for simulation in range(self.num_simulations):
             current_state = game_state
             node = self.root
@@ -71,25 +78,23 @@ class MCTSAgent(Agent):
                         break
                     moves, probabilities = self.policy_probabilities(current_state)
                     node.expand_children(moves, probabilities)
-
                 move, node = node.select_child()
+                print(f'current board ({simulation}/{depth})')
+                print_board(current_state.board)
+                print(f'Move to be applied:')
+                print(f'{move}')
                 current_state = current_state.apply_move(move)
             value = self.value.predict(current_state)
             rollout = self.policy_rollout(current_state)
-
             weighted_value = (1 - self.lambda_value) * value + \
                              self.lambda_value * rollout
-
             node.update_values(weighted_value)
-
         move = max(self.root.children,
                    key=lambda move: self.root.children.get(move).visit_count)
-
         self.root = MCTSNode()
-        if move in self.root.children:
+        if move in self.root.children:  # <2>
             self.root = self.root.children[move]
             self.root.parent = None
-
         return move
 
     def policy_probabilities(self, game_state):
@@ -110,18 +115,12 @@ class MCTSAgent(Agent):
             move_probabilities = self.rollout_policy.predict(game_state)
             encoder = self.rollout_policy.encoder
 
-            legal_moves = set(game_state.legal_moves())
-            valid_moves = [m for idx, m in enumerate(move_probabilities)
-                            if Move(encoder.decode_point_index(idx)) in legal_moves]
-
-            # valid_moves = [m for idx, m in enumerate(move_probabilities)
-            #                 if Move(encoder.decode_point_index(idx)) in game_state.legal_moves()]
-
-            max_index, max_value = max(enumerate(valid_moves), key=operator.itemgetter(1))
-            max_point = encoder.decode_point_index(max_index)
-            greedy_move = Move(max_point)
-            if greedy_move in game_state.legal_moves():
-                game_state = game_state.apply_move(greedy_move)
+            for idx in np.argsort(move_probabilities)[::-1]:
+                max_point = encoder.decode_point_index(idx)
+                greedy_move = Move(max_point)
+                if greedy_move in game_state.legal_moves():
+                    game_state = game_state.apply_move(greedy_move)
+                    break
 
         next_player = game_state.next_player
         winner = game_state.winner()

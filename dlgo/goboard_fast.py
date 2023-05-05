@@ -3,6 +3,7 @@ from dlgo.gotypes import Player, Point
 from dlgo.scoring import compute_game_result
 from dlgo import zobrist
 from dlgo.utils import MoveAge
+from dlgo.utils import print_board
 
 __all__ = [
     'Board',
@@ -120,6 +121,7 @@ class Board:
         assert self.is_on_grid(point)
         if self._grid.get(point) is not None:
             print('Illegal play on %s' % str(point))
+            print_board(self)
         assert self._grid.get(point) is None
         # 0. Examine the adjacent points.
         adjacent_same_color = []

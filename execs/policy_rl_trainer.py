@@ -25,27 +25,24 @@ logger = logging.getLogger('trainingLogger')
 def main():
     logger.info('RL TRAINER: STARTED')
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num-games', '-n', default=1000, type=int, required=False)
     parser.add_argument('experience', nargs='+')
 
     args = parser.parse_args()
-    num_games = args.num_games
     experience_files = args.experience
 
-    trainer = RLTrainer(num_games, experience_files)
+    trainer = RLTrainer(experience_files)
     trainer.train()
     logger.info('RL TRAINER: FINISHED')
 
 
 class RLTrainer:
-    def __init__(self, num_games, exp_files):
-        self.num_games = num_games
+    def __init__(self, exp_files):
         self.board_size = 19
         self.batch_size = 1024
         self.encoder = get_encoder_by_name('simple', self.board_size)
         self.model_dir = Path.cwd() / 'models'
-        self.model_sl_name = 'model_sl_strong_improved_100_1_epoch1.h5'
-        self.model_rl_name = 'model_rl_strong_improved_100_1_epoch1.h5'
+        self.model_sl_name = 'model_sl_strong_improved_10000_1_epoch1.h5'
+        self.model_rl_name = 'model_rl_strong_improved_10000_1_epoch1.h5'
         self.learning_rate = 0.007
         self.exp_files = exp_files
         self.exp_paths = []

@@ -4,12 +4,10 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 
-from dlgo import agent
 from dlgo import goboard_fast as goboard
+from dlgo.agent.naive import RandomBot
 from dlgo.utils import coords_from_point
 from dlgo.utils import point_from_coords
-from dlgo.utils import print_board
-from dlgo.agent.naive import RandomBot
 
 __all__ = [
     'get_web_app',
