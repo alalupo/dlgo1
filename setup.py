@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='dlgo',
+    name='go_bot',
     version='0.1',
     description='Deep Learning for the Game of Go',
     packages=find_packages(),
@@ -12,6 +12,7 @@ setup(
         'h5py',
         'keras',
         'matplotlib',
+        'dlgo',
     ]
 )
 
