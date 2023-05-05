@@ -14,7 +14,7 @@ from keras.models import Model
 from keras.callbacks import ModelCheckpoint
 
 project_path = Path(__file__).resolve().parent.parent
-# sys.path.append(str(project_path))
+sys.path.append(str(project_path))
 sys.path.append(str(Path.cwd() / 'dlgo'))
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
