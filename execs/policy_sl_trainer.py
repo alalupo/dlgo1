@@ -8,6 +8,7 @@ print(f'script directory: {script_directory}')
 project_directory = os.path.dirname(script_directory)
 print(f'project directory: {project_directory}')
 sys.path.append(project_directory)
+sys.path.append(script_directory)
 
 import argparse
 import logging.config
