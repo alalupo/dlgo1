@@ -1,7 +1,9 @@
 import os
 from pathlib import Path
 import sys
-project_directory = os.path.dirname(os.path.abspath(__file__))
+
+script_directory = os.path.dirname(os.path.abspath(__file__))
+project_directory = os.path.dirname(script_directory)
 sys.path.append(project_directory)
 from config import dlgo_directory
 
