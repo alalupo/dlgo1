@@ -1,7 +1,9 @@
 import os
 from pathlib import Path
 import sys
-from config import dlgo_directory, project_directory
+project_directory = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(project_directory)
+from config import dlgo_directory
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import argparse
@@ -14,7 +16,6 @@ keras = tf.keras
 from keras.models import Model
 from keras.callbacks import ModelCheckpoint
 
-sys.path.append(project_directory)
 sys.path.append(dlgo_directory)
 # print(f'sys path: {sys.path}')
 
