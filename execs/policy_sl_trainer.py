@@ -13,10 +13,14 @@ keras = tf.keras
 from keras.models import Model
 from keras.callbacks import ModelCheckpoint
 
-project_path = Path(__file__).resolve().parent.parent
-os.chdir(project_path)
-sys.path.append(str(project_path))
-sys.path.append(str(Path.cwd() / 'dlgo'))
+# project_path = Path(__file__).resolve().parent.parent
+# os.chdir(project_path)
+# sys.path.append(str(project_path))
+# sys.path.append(str(Path.cwd() / 'dlgo'))
+
+script_directory = os.path.dirname(os.path.abspath(__file__))
+project_directory = os.path.dirname(script_directory)
+dlgo_directory = os.path.join(project_directory, 'dlgo')
 
 from dlgo.data.data_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name

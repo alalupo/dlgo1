@@ -23,7 +23,8 @@ class MCTSLoader:
         self.model_dir = Path.cwd() / 'models'
         self.fast_policy_name = 'model_sl_fast_improved_10000_1_epoch1.h5'
         # self.strong_policy_name = 'model_rl_strong_improved_10000_1_epoch1.h5'
-        self.strong_policy_name = 'model_simple_trainer3b_10k_50_epoch50_13proc.h5'
+        # self.strong_policy_name = 'model_simple_trainer3b_10k_50_epoch50_13proc.h5'
+        self.strong_policy_name = 'model_simple_trainer4_50000_15_epoch5_20proc.h5'
         self.value_name = 'model_value_rl_value_improved.h5'
         self.fast_policy_path = str(self.model_dir / self.fast_policy_name)
         self.strong_policy_path = str(self.model_dir / self.strong_policy_name)
