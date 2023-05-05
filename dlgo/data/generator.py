@@ -52,5 +52,5 @@ class DataGenerator:
 
     def generate(self, batch_size=128):
         while True:
-            for item in self._generate(batch_size):
-                yield item
+            for x, y in self._generate(batch_size):
+                yield x, y
