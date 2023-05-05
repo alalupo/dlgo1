@@ -22,6 +22,9 @@ from keras.callbacks import ModelCheckpoint
 
 from config import dlgo_directory
 print(f'dlgo directory: {dlgo_directory}')
+dlgo_subdirectory = os.path.join(dlgo_directory, 'data')
+sys.path.append(dlgo_subdirectory)
+
 sys.path.append(dlgo_directory)
 from dlgo.data.data_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name
