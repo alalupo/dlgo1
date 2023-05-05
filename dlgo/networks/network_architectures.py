@@ -12,17 +12,17 @@ class StrongPolicyNetwork:
         self.encoder = encoder
         self.num_classes = self.encoder.num_points()
         self.board_input = Input(shape=encoder.shape_for_keras(), name='board_input')
-        self.num_filters = 128
-        self.kernel_size = 5
+        self.num_filters = 256
+        self.kernel_size = 3
         self.name = 'strong'
         self.output = self.define_layers()
 
     def define_layers(self):
-        self.name = f'{self.name}_improved2'
+        self.name = f'{self.name}_improved3'
         net = Conv2D(self.num_filters, self.kernel_size, padding='same', activation='relu')(self.board_input)
         net = BatchNormalization()(net)
 
-        for i in range(2):  # 2 instead of 3
+        for i in range(4):
             skip = net
             net = Conv2D(self.num_filters, self.kernel_size, padding='same', activation='relu')(net)
             net = BatchNormalization()(net)
@@ -31,10 +31,56 @@ class StrongPolicyNetwork:
             net = Add()([net, skip])
             net = Activation('relu')(net)
 
-        net = Conv2D(filters=1, kernel_size=1, padding='same', activation='softmax')(net)
-        output = Flatten()(net)
+        net = Conv2D(filters=1, kernel_size=1, padding='same', activation='relu')(net)
+        net = BatchNormalization()(net)
+        net = Flatten()(net)
+        output = Dense(self.num_classes, activation='softmax')(net)
 
         return output
+
+    # self.name = f'{self.name}_improved'
+    # net = Conv2D(self.num_filters, self.kernel_size, padding='same', activation='relu')(self.board_input)
+    # net = BatchNormalization()(net)
+    # for i in range(3):
+    #     skip = net
+    #     net = Conv2D(self.num_filters, self.kernel_size, padding='same', activation='relu')(net)
+    #     net = BatchNormalization()(net)
+    #     net = Conv2D(self.num_filters, self.kernel_size, padding='same')(net)
+    #     net = BatchNormalization()(net)
+    #     net = Add()([net, skip])
+    #     net = Activation('relu')(net)
+    # net = Conv2D(filters=1, kernel_size=1, padding='same', activation='softmax')(net)
+    # output = Flatten()(net)
+    # return output
+
+    # # 6: 3xbefore skip (20% val_accuracy on 50,000 train set)
+    # self.name = f'{self.name}6'
+    # net = ZeroPadding2D(padding=3)(self.board_input)
+    # net = Conv2D(48, (7, 7), kernel_regularizer=reg_lambda)(net)
+    # net = BatchNormalization()(net)
+    # net = LeakyReLU(alpha=0.1)(net)
+    # net = ZeroPadding2D(padding=2)(net)
+    # net = Conv2D(32, (5, 5), kernel_regularizer=reg_lambda)(net)
+    # net = BatchNormalization()(net)
+    # net = LeakyReLU(alpha=0.1)(net)
+    # net = ZeroPadding2D(padding=2)(net)
+    # net = Conv2D(32, (5, 5), kernel_regularizer=reg_lambda)(net)
+    # net = BatchNormalization()(net)
+    # net = LeakyReLU(alpha=0.1)(net)
+    # skip = net
+    # net = ZeroPadding2D(padding=2)(net)
+    # net = Conv2D(32, (5, 5), kernel_regularizer=reg_lambda)(net)
+    # net = BatchNormalization()(net)
+    # net = LeakyReLU(alpha=0.1)(net)
+    # net = ZeroPadding2D(padding=2)(net)
+    # net = Conv2D(32, (5, 5), kernel_regularizer=reg_lambda)(net)
+    # net = BatchNormalization()(net)
+    # net = Add()([net, skip])
+    # net = LeakyReLU(alpha=0.1)(net)
+    # flat = Flatten()(net)
+    # flat = Dropout(0.5)(flat)
+    # output = Dense(self.num_classes, activation='softmax')(flat)
+    # return output
 
 
 # class StrongPolicyNetwork:
@@ -79,10 +125,10 @@ class ValueNetwork:
         self.output = self.define_layers(l2(0.01))
 
     def define_layers(self, reg_lambda):
-
         self.name = f'{self.name}_improved'
 
-        net = Conv2D(self.num_filters, self.first_kernel_size, padding='same', kernel_regularizer=reg_lambda)(self.board_input)
+        net = Conv2D(self.num_filters, self.first_kernel_size, padding='same', kernel_regularizer=reg_lambda)(
+            self.board_input)
         net = BatchNormalization()(net)
         net = Activation('relu')(net)
 
