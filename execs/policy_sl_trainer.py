@@ -80,7 +80,7 @@ class SLTrainer:
             self.network = StrongPolicyNetwork(encoder=self.encoder)
         else:
             self.network = FastPolicyNetwork(encoder=self.encoder)
-        self.optimizer = tf.keras.optimizers.Adagrad()
+        self.optimizer = tf.keras.optimizers.Adam()
         self.loss_function = 'categorical_crossentropy'
         self.model_dir = str(Path.cwd() / 'models')
         self.model = self.build_model()

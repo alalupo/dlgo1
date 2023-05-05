@@ -10,6 +10,7 @@ from keras.regularizers import l2
 class StrongPolicyNetwork:
     def __init__(self, encoder):
         self.encoder = encoder
+        self.num_classes = self.encoder.num_points()
         self.board_input = Input(shape=encoder.shape_for_keras(), name='board_input')
         self.num_filters = 128
         self.kernel_size = 5
@@ -17,11 +18,11 @@ class StrongPolicyNetwork:
         self.output = self.define_layers()
 
     def define_layers(self):
-        self.name = f'{self.name}_improved'
+        self.name = f'{self.name}_improved2'
         net = Conv2D(self.num_filters, self.kernel_size, padding='same', activation='relu')(self.board_input)
         net = BatchNormalization()(net)
 
-        for i in range(3):
+        for i in range(2):  # 2 instead of 3
             skip = net
             net = Conv2D(self.num_filters, self.kernel_size, padding='same', activation='relu')(net)
             net = BatchNormalization()(net)
@@ -32,6 +33,7 @@ class StrongPolicyNetwork:
 
         net = Conv2D(filters=1, kernel_size=1, padding='same', activation='softmax')(net)
         output = Flatten()(net)
+
         return output
 
 
