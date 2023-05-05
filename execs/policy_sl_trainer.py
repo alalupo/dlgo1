@@ -1,13 +1,12 @@
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from pathlib import Path
 import sys
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
 project_directory = os.path.dirname(script_directory)
 sys.path.append(project_directory)
-from config import dlgo_directory
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import argparse
 import logging.config
 
@@ -18,9 +17,10 @@ keras = tf.keras
 from keras.models import Model
 from keras.callbacks import ModelCheckpoint
 
-sys.path.append(dlgo_directory)
-# print(f'sys path: {sys.path}')
 
+from config import dlgo_directory
+print(f'{dlgo_directory}')
+sys.path.append(dlgo_directory)
 from dlgo.data.data_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.networks.network_architectures import FastPolicyNetwork, StrongPolicyNetwork
