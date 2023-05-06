@@ -3,12 +3,10 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from pathlib import Path
 import sys
 
-script_directory = os.path.dirname(__file__)
-print(f'script directory: {script_directory}')
-project_directory = os.path.dirname(script_directory)
-print(f'project directory: {project_directory}')
+this_directory = os.path.dirname(__file__)
+project_directory = os.path.dirname(this_directory)
 sys.path.append(project_directory)
-sys.path.append(script_directory)
+sys.path.append(this_directory)
 
 import argparse
 import logging.config
@@ -21,10 +19,6 @@ from keras.models import Model
 from keras.callbacks import ModelCheckpoint
 
 from config import dlgo_directory
-print(f'dlgo directory: {dlgo_directory}')
-dlgo_subdirectory = os.path.join(dlgo_directory, 'data')
-sys.path.append(dlgo_subdirectory)
-
 sys.path.append(dlgo_directory)
 from dlgo.data.data_processor import GoDataProcessor
 from dlgo.encoders.base import get_encoder_by_name
