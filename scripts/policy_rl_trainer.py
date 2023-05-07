@@ -66,6 +66,7 @@ class RLTrainer:
                                   batch_size=self.batch_size,
                                   num_planes=self.encoder.num_planes,
                                   board_size=self.board_size,
+                                  client='pg',
                                   seed=1234)
             print(f'>>> TRAINING RL MODEL...')
             rl_agent.train(

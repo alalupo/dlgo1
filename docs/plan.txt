@@ -1,0 +1,37 @@
+Pierwszy rozdział
+
+1. Gra w go - rys historyczny oraz opisanie zasad gry
+2. Zarys historii zastosowania AI do gier, a w szczególności do go
+3. Metody uczenia maszynowego i uczenie przez wzmacnianie - wstęp ogólny
+- uczenie nadzorowane
+- uczenie przez wzmacnianie
+    - kluczowe koncepcje i terminologia
+    - funkcja polityki, funkcja wartości stanu, funkcja wartości akcji
+    - metody rozwiązań (REINFORCE, Q-value, aktor-krytyk, self-play ?)
+4. Opis zasad działania  AlphaGo (2016) będącego punktem odniesienia dla niniejszego projektu.
+5. Innowacje wprowadzone przez AlphaGoZero i AlphaZero.
+
+Drugi rozdział
+
+1. Omówienie sposobu implementacji zasad gry w go w Pythonie (struktury danych, główne klasy reprezentujące graczy, planszę, ruchy, układy kamieni itp)
+2. Omówienie struktury całego projektu (agenci, rodzaje sieci, kod do gry z innymi botami, kod do gry z ludźmi itp)
+3. Struktura sieci neuronowej użyta do budowania bota, zastosowane optymalizatory, funkcje straty itp
+4. Proces uczenia - dostrajanie modelu przy pomocy biblioteki Keras, uczenie przez wzmacnianie poprzez grę z samym sobą i innymi botami, opis ewentualnych prób i błędów oraz - mam nadzieję - postępów.
+- ograniczenia sprzętowe
+- eksperymenty z różnymi architekturami sieci neuronowej
+- self-play
+5. Instrukcja do wypróbowania bota (mam nadzieję, że uda mi się go umieścić na jednym z serwerów do gry w go).
+
+
+
+
+Policy gradient: REINFORCE
+1 Zagraj w grę kilkukrotnie, w każdym kroku oblicz gradient
+wzmacniający wybraną akcję (tj. tak, jakby wybrana akcja była
+najlepsza możliwa)
+2 Oblicz nagrodę każdej akcji:
+1 Uwzględnij przyszłe nagrody przez discount ratio
+2 Dokonaj normalizacji odejmując średnią i dzieląc przez odchylenie
+standardowe (po wszystkich zdyskontowanych nagrodach)
+3 Pomnóż gradienty przez odpowiadające im znormalizowane nagrody
+4 Uśrednij i zaaplikuj gradienty
