@@ -1,15 +1,24 @@
 import argparse
-import h5py
-from collections import namedtuple
 import os
+import sys
+from collections import namedtuple
+from pathlib import Path
+
+import h5py
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import tensorflow as tf
+
 keras = tf.keras
 from keras.models import load_model
 
-from dlgo.tools.file_finder import FileFinder
-from dlgo.rl.ac import ACAgent
+this_directory = os.path.dirname(__file__)
+project_directory = os.path.dirname(this_directory)
+sys.path.append(project_directory)
+sys.path.append(this_directory)
+
+from dlgo.agent.pg import PolicyAgent
 from dlgo import scoring
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.goboard_fast import GameState, Player
@@ -21,10 +30,10 @@ class GameRecord(namedtuple('GameRecord', 'moves winner')):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--board-size', '-size', type=int, required=True)
-    parser.add_argument('--model1', required=True)
-    parser.add_argument('--model2', required=True)
-    parser.add_argument('--num-games', '-n', type=int, default=10)
+    parser.add_argument('--board-size', '-size', type=int, default=19, required=True)
+    parser.add_argument('--model1', '-m1', required=True)
+    parser.add_argument('--model2', '-m2', required=True)
+    parser.add_argument('--num-games', '-n', type=int, default=100)
 
     args = parser.parse_args()
     board_size = args.board_size
@@ -48,8 +57,7 @@ class Evaluator:
 
     @staticmethod
     def get_model_path(model):
-        finder = FileFinder()
-        return finder.get_model_full_path(model)
+        return str(Path(project_directory) / 'models' / model)
 
     @staticmethod
     def get_model(model_path):
@@ -64,8 +72,8 @@ class Evaluator:
 
     def play(self):
 
-        agent1 = ACAgent(self.model1, self.encoder)
-        agent2 = ACAgent(self.model2, self.encoder)
+        agent1 = PolicyAgent(self.model1, self.encoder)
+        agent2 = PolicyAgent(self.model2, self.encoder)
 
         wins = 0
         losses = 0

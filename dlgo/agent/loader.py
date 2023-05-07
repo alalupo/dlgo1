@@ -12,11 +12,13 @@ os.chdir(project_path)
 sys.path.append(str(project_path))
 sys.path.append(str(Path.cwd() / 'dlgo'))
 
+from dlgo.zero.agent import ZeroAgent
 from agent.mcts_loader import MCTSLoader
 from dlgo.agent.pg import PolicyAgent
 from dlgo.agent.predict import DeepLearningAgent
 from dlgo.rl.ac import ACAgent
 from dlgo.rl.q import QAgent
+from dlgo.zero.encoder import ZeroEncoder
 from dlgo.encoders.base import get_encoder_by_name
 import h5py
 
@@ -25,6 +27,7 @@ class Loader:
     def __init__(self, name):
         self.agent_name = name
         self.encoder = get_encoder_by_name('simple', 19)
+        self.zero_model_name = 'model_zero_10.h5'
         self.pg_model_name = 'model_sl_strong_improved_100_1_epoch1.h5'
         self.predict_model_name = 'model_sl_strong_improved_100_1_epoch1.h5'
         self.q_model_name = 'model_sl_strong_improved_100_1_epoch1.h5'
@@ -36,7 +39,9 @@ class Loader:
         path = None
         if self.agent_name == 'mcts':
             return None
-        if self.agent_name == 'pg':
+        if self.agent_name == 'zero':
+            path = str(self.model_dir / self.zero_model_name)
+        elif self.agent_name == 'pg':
             path = str(self.model_dir / self.pg_model_name)
         elif self.agent_name == 'predict':
             path = str(self.model_dir / self.predict_model_name)
@@ -59,6 +64,9 @@ class Loader:
         if self.agent_name == 'mcts':
             player = MCTSLoader()
             return player.get_agent()
+        elif self.agent_name == 'zero':
+            encoder = ZeroEncoder(19)
+            return ZeroAgent(self.model, encoder, rounds_per_move=30)
         elif self.agent_name == 'pg':
             return PolicyAgent(self.model, self.encoder)
         elif self.agent_name == 'predict':
