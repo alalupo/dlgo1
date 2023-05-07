@@ -5,10 +5,12 @@ import tensorflow as tf
 
 keras = tf.keras
 from keras.optimizers import SGD
+from keras.models import Model
 
 from dlgo.goboard_fast import Move
 from dlgo.agent.base import Agent
 from dlgo.agent.helpers import is_point_an_eye
+from dlgo.encoders.simple import SimpleEncoder
 
 # from dlgo.tools.board_decoder import BoardDecoder
 
@@ -32,22 +34,22 @@ def prepare_experience_data(experience, board_width, board_height):
 class PolicyAgent(Agent):
     """Policy gradient learning agent."""
 
-    def __init__(self, model, encoder):
+    def __init__(self, model: Model, encoder: SimpleEncoder):
         super().__init__()
         self.model = model
         self.encoder = encoder
-        self._collector = None
-        self._temperature = 0.0
+        self.collector = None
+        self.temperature = 0.0
         self.last_state_value = 0
 
     def diagnostics(self):
         return {'value': self.last_state_value}
 
     def set_temperature(self, temperature):
-        self._temperature = temperature
+        self.temperature = temperature
 
     def set_collector(self, collector):
-        self._collector = collector
+        self.collector = collector
 
     def predict(self, game_state):
         board_tensor = self.encoder.encode(game_state)
@@ -61,7 +63,7 @@ class PolicyAgent(Agent):
         board_tensor = self.encoder.encode(game_state)
         board_tensor = np.transpose(board_tensor, (1, 2, 0))
         X = np.array([board_tensor])
-        if np.random.random() < self._temperature:
+        if np.random.random() < self.temperature:
             # Explore random moves.
             move_probs = np.ones(num_moves) / num_moves
         else:
@@ -71,7 +73,7 @@ class PolicyAgent(Agent):
             move_probs = move_probs.numpy()
 
         # Prevent move probs from getting stuck at 0 or 1.
-        eps = 1e-5
+        eps = 3e-5
         move_probs = np.clip(move_probs, eps, 1 - eps)
         # Re-normalize to get another probability distribution.
         move_probs = move_probs / np.sum(move_probs)
@@ -88,8 +90,8 @@ class PolicyAgent(Agent):
                 continue
             if fills_own_eye:
                 continue
-            if self._collector is not None:
-                self._collector.record_decision(state=board_tensor, action=point_idx)
+            if self.collector is not None:
+                self.collector.record_decision(state=board_tensor, action=point_idx)
                 # decoder = BoardDecoder(board_tensor)
                 # decoder.print()
                 # print(f'')
@@ -100,8 +102,11 @@ class PolicyAgent(Agent):
 
     def train(self, gen, lr, clipnorm, batch_size):
 
-        opt = SGD(learning_rate=lr, clipnorm=clipnorm)
+        opt = tf.keras.optimizers.Adam(learning_rate=lr, clipnorm=clipnorm)
         self.model.compile(optimizer=opt, loss='categorical_crossentropy')
+
+        print(f'STEPS PER EPOCH: {len(gen)}')
+        print(f'BATCH SIZE: {batch_size}')
 
         history = self.model.fit(
             gen.generate(),

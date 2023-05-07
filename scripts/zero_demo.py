@@ -1,9 +1,3 @@
-# This scripts demonstrates all the steps to create and train an
-# AGZ-style bot.
-# For practical purposes, you would separate this script into multiple
-# parts (for initializing, generating self-play games, and training).
-# You'll also need to run for many more rounds.
-
 import argparse
 import os
 import sys
@@ -25,7 +19,7 @@ from dlgo import scoring
 from dlgo import zero
 from dlgo.goboard_fast import GameState, Player
 from dlgo.networks.network_architectures import Network
-from dlgo.utils import print_board
+# from dlgo.utils import print_board
 
 
 def simulate_game(board_size, black_agent, black_collector, white_agent, white_collector):
@@ -70,7 +64,6 @@ def main():
     args = parser.parse_args()
     num_batches = args.num_batches
 
-    # Initialize a zero agent
     board_size = 19
     # Optimally, a few hundred rounds per move
     rounds = 50

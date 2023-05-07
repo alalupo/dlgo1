@@ -9,8 +9,8 @@ __all__ = [
 
 
 class ExpWriter:
-    def __init__(self, h5file, board_size, num_planes):
-        self.str_h5file = h5file
+    def __init__(self, h5file: str, board_size: int, num_planes: int):
+        self.h5file = h5file
         self.board_size = board_size
         self.num_planes = num_planes
         self._current_episode_states = []
@@ -19,7 +19,7 @@ class ExpWriter:
         self.max_advantage = 0.0
 
     def __len__(self):
-        with h5py.File(self.str_h5file, "r") as f:
+        with h5py.File(self.h5file, "r") as f:
             return int(f['experience/states'].shape[0])
 
     @staticmethod
@@ -58,7 +58,7 @@ class ExpWriter:
         self._current_episode_states = []
         self._current_episode_actions = []
         self._current_episode_estimated_values = []
-        with h5py.File(self.str_h5file, "a") as f:
+        with h5py.File(self.h5file, "a") as f:
             self.serialize(f, states, actions, rewards, advantages)
 
     def serialize(self, h5file, states, actions, rewards, advantages):
@@ -86,7 +86,6 @@ class ExpWriter:
                     h5file['experience/max_advantage'][()] = saved_max_advantage
                 else:
                     h5file['experience/max_advantage'][()] = self.max_advantage
-
 
         else:
             h5file.create_group('experience')

@@ -45,7 +45,9 @@ def main():
     logger.info(f'MODEL NAME: {model_name}')
     logger.info(f'GAMES: {num_games}')
 
-    dispatcher = Dispatcher(19, num_games, model_name)
+    model_path = Path.cwd() / 'models' / model_name
+
+    dispatcher = Dispatcher(19, num_games, model_path)
     dispatcher.run_simulations()
     logger.info('SIMULATOR: Logging finished')
 
@@ -55,22 +57,21 @@ class GameRecord(namedtuple('GameRecord', 'moves winner margin')):
 
 
 class Dispatcher:
-    def __init__(self, board_size, num_games, model_name):
+    def __init__(self, board_size: int, num_games: int, model_path: Path):
         self.board_size = board_size
         self.num_games = num_games
-        self.model_name = model_name
-        self.model_dir = Path.cwd() / 'models'
+        self.model_path = model_path
         self.encoder = get_encoder_by_name('simple', self.board_size)
         self.limit = 1000
         self.exp_paths = []
 
     def run_simulations(self):
-        rl_agent = self.create_bot(self.model_name)
-        opponent = self.create_bot(self.model_name)
+        rl_agent = self.create_bot()
+        opponent = self.create_bot()
 
         for i in range(0, self.num_games, self.limit):
             games = min(self.num_games - i, self.limit)
-            simulator = Simulator(self.board_size, games)
+            simulator = Simulator(self.board_size, games, self.model_path)
             path = simulator.build_experience(rl_agent, opponent)
             self.exp_paths.append(path)
 
@@ -78,32 +79,30 @@ class Dispatcher:
         for exp in self.exp_paths:
             print(f'{exp}')
 
-    def create_bot(self, model_name):
-        print(f'>>>Creating bot {model_name}...')
-        path = str(self.model_dir / model_name)
-        model = self.get_model(path)
+    def create_bot(self):
+        print(f'>>> Creating bot for model {self.model_path}...')
+        model = self.get_model()
         return PolicyAgent(model, self.encoder)
 
-    def get_model(self, model_path):
+    def get_model(self):
         model_file = None
         try:
-            model_file = open(model_path, 'r')
+            model_file = open(str(self.model_path), 'r')
         finally:
             model_file.close()
-        with h5py.File(model_path, "r") as model_file:
+        with h5py.File(str(self.model_path), "r") as model_file:
             model = load_model(model_file)
         return model
 
 
 class Simulator:
-    def __init__(self, board_size, num_games):
+    def __init__(self, board_size: int, num_games: int, model_path: Path):
         self.board_size = board_size
         self.encoder = get_encoder_by_name('simple', self.board_size)
         self.num_planes = self.encoder.num_planes
         self.num_games = num_games
-        self.exp_name = f'exp_rl_bs{self.board_size}_{num_games}.h5'
-        self.exp_path = str(Path.cwd() / 'exp' / self.exp_name)
-        cleaning(Path.cwd() / 'exp' / self.exp_name)
+        self.exp_path = str(model_path).replace('models', 'exp').replace('model_', 'exp_')
+        cleaning(Path(self.exp_path))
 
     def build_experience(self, rl_agent, opponent):
 
@@ -135,6 +134,7 @@ class Simulator:
             color1 = color1.other
 
         print(f'>>> {self.num_games} games completed.')
+        print(f'>>> {len(collector1)} states saved.')
         return self.exp_path
 
     def simulate_game(self, black_player, white_player):

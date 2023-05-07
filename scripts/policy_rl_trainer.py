@@ -25,49 +25,57 @@ logger = logging.getLogger('trainingLogger')
 def main():
     logger.info('RL TRAINER: STARTED')
     parser = argparse.ArgumentParser()
+    parser.add_argument('--model', '-m', required=True)
     parser.add_argument('experience', nargs='+')
 
     args = parser.parse_args()
+    model_name = args.model
     experience_files = args.experience
 
-    trainer = RLTrainer(experience_files)
+    model_path = str(Path.cwd() / 'models' / model_name)
+    exp_paths = []
+    if isinstance(experience_files, (list, tuple)):
+        for exp_file in experience_files:
+            exp_path = str(Path.cwd() / 'exp' / exp_file)
+            exp_paths.append(exp_path)
+    else:
+        exp_path = str(Path.cwd() / 'exp' / experience_files)
+        exp_paths.append(exp_path)
+
+    trainer = RLTrainer(model_path, exp_paths)
     trainer.train()
     logger.info('RL TRAINER: FINISHED')
 
 
 class RLTrainer:
-    def __init__(self, exp_files):
+    def __init__(self, model_sl_path: str, exp_paths: list[str]):
         self.board_size = 19
         self.batch_size = 1024
         self.encoder = get_encoder_by_name('simple', self.board_size)
-        self.model_dir = Path.cwd() / 'models'
-        self.model_sl_name = 'model_sl_strong_improved_10000_1_epoch1.h5'
-        self.model_rl_name = 'model_rl_strong_improved_10000_1_epoch1.h5'
+        self.model_sl_path = model_sl_path
+        self.model_rl_path = Path(str(self.model_sl_path).replace('_sl_', '_rl_'))
         self.learning_rate = 0.007
-        self.exp_files = exp_files
         self.exp_paths = []
-        if isinstance(exp_files, (list, tuple)):
-            for exp_file in exp_files:
-                exp_path = str(Path.cwd() / 'exp' / exp_file)
-                self.exp_paths.append(exp_path)
+        if isinstance(exp_paths, (list, tuple)):
+            for exp_file in exp_paths:
+                self.exp_paths.append(exp_file)
         else:
-            exp_path = str(Path.cwd() / 'exp' / exp_files)
-            self.exp_paths.append(exp_path)
+            self.exp_paths.append(exp_paths)
 
     def train(self):
         print(f'')
-        print(f'>>>LOADING RL AGENT...')
-        rl_agent = self.create_bot(self.model_sl_name)
+        print(f'>>> LOADING RL AGENT...')
+        rl_agent = self.create_bot()
 
         for exp_filename in self.exp_paths:
             print(f'')
-            print(f'>>>LOADING EXPERIENCE: {exp_filename}...')
+            print(f'>>> LOADING EXPERIENCE: {exp_filename}...')
             generator = ExpReader(exp_file=exp_filename,
                                   batch_size=self.batch_size,
                                   num_planes=self.encoder.num_planes,
                                   board_size=self.board_size,
-                                  client='pg',
-                                  seed=1234)
+                                  seed=1234,
+                                  client='pg')
             print(f'>>> TRAINING RL MODEL...')
             rl_agent.train(
                 generator,
@@ -77,27 +85,25 @@ class RLTrainer:
 
         self.save_rl_model(rl_agent.model)
 
-    def create_bot(self, model_name):
-        path = str(self.model_dir / model_name)
-        model = self.get_sl_model(path)
-        print(f'>>> RL bot for {model_name} has been created.')
+    def create_bot(self):
+        model = self.get_sl_model()
+        print(f'>>> Bot for {self.model_sl_path} has been created.')
         return PolicyAgent(model, self.encoder)
 
-    def get_sl_model(self, model_path):
+    def get_sl_model(self):
         model_file = None
         try:
-            model_file = open(model_path, 'r')
+            model_file = open(self.model_sl_path, 'r')
         finally:
             model_file.close()
-        with h5py.File(model_path, "r") as model_file:
+        with h5py.File(self.model_sl_path, "r") as model_file:
             model = load_model(model_file)
         return model
 
     def save_rl_model(self, model):
-        path = str(self.model_dir / self.model_rl_name)
-        with h5py.File(path, 'w') as model_outf:
-            save_model(model=model, filepath=model_outf, save_format='h5')
-        print(f'>>> RL model has been saved.')
+        with h5py.File(self.model_rl_path, 'w') as f:
+            save_model(model=model, filepath=f, save_format='h5')
+        print(f'>>> RL model has been saved at {self.model_rl_path}.')
 
 
 if __name__ == '__main__':
