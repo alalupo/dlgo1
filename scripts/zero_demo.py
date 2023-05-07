@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import h5py
+import numpy as np
 import tensorflow as tf
 
 keras = tf.keras
@@ -35,13 +36,17 @@ def simulate_game(board_size, black_agent, black_collector, white_agent, white_c
     }
     black_collector.begin_episode()
     white_collector.begin_episode()
+    m = 1
     while not game.is_over():
+        if m % 10 == 0:
+            print(f'{int(np.ceil(m/2))} : ', end='\r')
         next_move = agents[game.next_player].select_move(game)
         game = game.apply_move(next_move)
+        m += 1
 
     game_result = scoring.compute_game_result(game)
-    print_board(game.board)
-    # print(game_result)
+    # print_board(game.board)
+    print(game_result)
     # Give the reward to the right agent.
     if game_result.winner == Player.black:
         black_collector.complete_episode(1)
@@ -60,7 +65,7 @@ def save_trained_model(model, board_size, batches):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num-batches', '-b', type=int, default=2)
+    parser.add_argument('--num-batches', '-b', type=int, default=30)
 
     args = parser.parse_args()
     num_batches = args.num_batches
@@ -68,8 +73,8 @@ def main():
     # Initialize a zero agent
     board_size = 19
     # Optimally, a few hundred rounds per move
-    rounds = 10
-    num_games = 2
+    rounds = 50
+    num_games = 10
     encoder = zero.ZeroEncoder(board_size)
     network = Network(board_size)
 
