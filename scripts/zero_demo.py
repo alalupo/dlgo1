@@ -5,27 +5,34 @@
 # You'll also need to run for many more rounds.
 
 import argparse
+import os
+import sys
+from pathlib import Path
 
 import h5py
+import tensorflow as tf
 
-from keras.layers import Activation, BatchNormalization, Conv2D, Dense, Flatten, Input
-from keras.models import Model
+keras = tf.keras
+from keras.models import Model, save_model, load_model
+
+this_directory = os.path.dirname(__file__)
+project_directory = os.path.dirname(this_directory)
+sys.path.append(project_directory)
+sys.path.append(this_directory)
+
 from dlgo import scoring
 from dlgo import zero
-from dlgo.goboard_fast import GameState, Player, Point
+from dlgo.goboard_fast import GameState, Player
+from dlgo.networks.network_architectures import Network
+from dlgo.utils import print_board
 
 
-def simulate_game(
-        board_size,
-        black_agent, black_collector,
-        white_agent, white_collector):
-    print('Starting the game!')
+def simulate_game(board_size, black_agent, black_collector, white_agent, white_collector):
     game = GameState.new_game(board_size)
     agents = {
         Player.black: black_agent,
         Player.white: white_agent,
     }
-
     black_collector.begin_episode()
     white_collector.begin_episode()
     while not game.is_over():
@@ -33,7 +40,8 @@ def simulate_game(
         game = game.apply_move(next_move)
 
     game_result = scoring.compute_game_result(game)
-    print(game_result)
+    print_board(game.board)
+    # print(game_result)
     # Give the reward to the right agent.
     if game_result.winner == Player.black:
         black_collector.complete_episode(1)
@@ -43,60 +51,55 @@ def simulate_game(
         white_collector.complete_episode(1)
 
 
+def save_trained_model(model, board_size, batches):
+    path = str(Path(project_directory) / 'models' / f'model_zero_{board_size}_{batches}.h5')
+    with h5py.File(path, 'w') as f:
+        save_model(model=model, filepath=f, save_format='h5')
+    print(f'>>> Zero style model has been saved.')
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--num-batches', '-b', type=int, default=2)
+
+    args = parser.parse_args()
+    num_batches = args.num_batches
+
     # Initialize a zero agent
-    board_size = 9
+    board_size = 19
+    # Optimally, a few hundred rounds per move
+    rounds = 10
+    num_games = 2
     encoder = zero.ZeroEncoder(board_size)
-
-    board_input = Input(shape=encoder.shape(), name='board_input')
-
-    pb = board_input
-
-    # 4 conv layers with batch normalization
-    for i in range(4):
-        pb = Conv2D(64, (3, 3),
-            padding='same',
-            data_format='channels_first')(pb)
-        pb = BatchNormalization(axis=1)(pb)
-        pb = Activation('relu')(pb)
-
-    # Policy output
-    policy_conv = Conv2D(2, (1, 1), data_format='channels_first')(pb)
-    policy_batch = BatchNormalization(axis=1)(policy_conv)
-    policy_relu = Activation('relu')(policy_batch)
-    policy_flat = Flatten()(policy_relu)
-    policy_output = Dense(encoder.num_moves(), activation='softmax')(
-        policy_flat)
-
-    # Value output
-    value_conv = Conv2D(1, (1, 1), data_format='channels_first')(pb)
-    value_batch = BatchNormalization(axis=1)(value_conv)
-    value_relu = Activation('relu')(value_batch)
-    value_flat = Flatten()(value_relu)
-    value_hidden = Dense(256, activation='relu')(value_flat)
-    value_output = Dense(1, activation='tanh')(value_hidden)
+    network = Network(board_size)
 
     model = Model(
-        inputs=[board_input],
-        outputs=[policy_output, value_output])
+        inputs=[network.board_input],
+        outputs=[network.policy_output, network.value_output])
 
-    # Create two agents from the model and encoder.
-    # 10 is a very small value for rounds_per_move. To train a strong
-    # bot, you should run at least a few hundred rounds per move.
-    black_agent = zero.ZeroAgent(model, encoder, rounds_per_move=10, c=2.0)
-    white_agent = zero.ZeroAgent(model, encoder, rounds_per_move=10, c=2.0)
-    c1 = zero.ZeroExperienceCollector()
-    c2 = zero.ZeroExperienceCollector()
-    black_agent.set_collector(c1)
-    white_agent.set_collector(c2)
+    black_agent = zero.ZeroAgent(model, encoder, rounds_per_move=rounds, c=2.0)
+    white_agent = zero.ZeroAgent(model, encoder, rounds_per_move=rounds, c=2.0)
 
-    # In real training, you should simulate thousands of games for each
-    # training batch.
-    for i in range(5):
-        simulate_game(board_size, black_agent, c1, white_agent, c2)
+    for i in range(num_batches):
+        print(f'>>> The batch {i + 1}/{num_batches}')
+        if i != 0:
+            path = str(Path(project_directory) / 'models' / f'model_zero_{board_size}_{num_batches}.h5')
+            trained_model = load_model(path)
+            black_agent = zero.ZeroAgent(trained_model, encoder, rounds_per_move=rounds, c=2.0)
+            white_agent = zero.ZeroAgent(trained_model, encoder, rounds_per_move=rounds, c=2.0)
+        c1 = zero.ZeroExperienceCollector()
+        c2 = zero.ZeroExperienceCollector()
+        black_agent.set_collector(c1)
+        white_agent.set_collector(c2)
 
-    exp = zero.combine_experience([c1, c2])
-    black_agent.train(exp, 0.01, 2048)
+        # Optimally, thousands of games for each training batch.
+        for j in range(num_games):
+            print(f'>>> Starting the game {j + 1}/{num_games}')
+            simulate_game(board_size, black_agent, c1, white_agent, c2)
+
+        exp = zero.combine_experience([c1, c2])
+        black_agent.train(exp, 0.01, 2048)
+        save_trained_model(black_agent.model, board_size, num_batches)
 
 
 if __name__ == '__main__':

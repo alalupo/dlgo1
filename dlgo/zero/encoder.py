@@ -38,14 +38,13 @@ class ZeroEncoder:
 
         return board_tensor
 
-# tag::encode_move[]
     def encode_move(self, move):
         if move.is_play:
-            return (self.board_size * (move.point.row - 1) +   # <1>
-                (move.point.col - 1))                          # <1>
+            return (self.board_size * (move.point.row - 1) +
+                (move.point.col - 1))
         elif move.is_pass:
-            return self.board_size * self.board_size           # <2>
-        raise ValueError('Cannot encode resign move')          # <3>
+            return self.board_size * self.board_size
+        raise ValueError('Cannot encode resign move')
 
     def decode_move_index(self, index):
         if index == self.board_size * self.board_size:
@@ -56,7 +55,10 @@ class ZeroEncoder:
 
     def num_moves(self):
         return self.board_size * self.board_size + 1
-# end::encode_move[]
 
     def shape(self):
         return self.num_planes, self.board_size, self.board_size
+
+    def channels_last_shape(self):
+        return self.board_size, self.board_size, self.num_planes
+

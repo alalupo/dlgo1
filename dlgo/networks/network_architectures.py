@@ -6,6 +6,47 @@ from keras.layers import ZeroPadding2D, MaxPooling2D, BatchNormalization, LeakyR
 from keras.layers import Add
 from keras.regularizers import l2
 
+from dlgo.zero import ZeroEncoder
+
+
+# AlphaGoZero style network
+
+class Network:
+    def __init__(self, board_size):
+        self.board_size = board_size
+        self.encoder = ZeroEncoder(self.board_size)
+        self.board_input = Input(shape=self.encoder.channels_last_shape(), name='board_input')
+        self.num_filters = 256
+        self.kernel_size = 3
+        self.name = 'strong'
+        self.policy_output, self.value_output = self.define_layers()
+
+    def define_layers(self):
+
+        pb = self.board_input
+        # 4 conv layers with batch normalization
+        for i in range(4):
+            pb = Conv2D(64, (3, 3), padding='same')(pb)
+            pb = BatchNormalization(axis=1)(pb)
+            pb = Activation('relu')(pb)
+        # Policy output
+        policy_conv = Conv2D(2, (1, 1))(pb)
+        policy_batch = BatchNormalization(axis=1)(policy_conv)
+        policy_relu = Activation('relu')(policy_batch)
+        policy_flat = Flatten()(policy_relu)
+        policy_output = Dense(self.encoder.num_moves(), activation='softmax')(
+            policy_flat)
+        # Value output
+        value_conv = Conv2D(1, (1, 1))(pb)
+        value_batch = BatchNormalization(axis=1)(value_conv)
+        value_relu = Activation('relu')(value_batch)
+        value_flat = Flatten()(value_relu)
+        value_hidden = Dense(256, activation='relu')(value_flat)
+        value_output = Dense(1, activation='tanh')(value_hidden)
+        return policy_output, value_output
+
+
+# AlphaGo style networks
 
 class StrongPolicyNetwork:
     def __init__(self, encoder):
