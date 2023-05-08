@@ -1,15 +1,12 @@
 import numpy as np
-
+import logging.config
 import tensorflow as tf
 keras = tf.keras
-from keras.optimizers import SGD, Adam
 
 from ..agent import Agent
 
-__all__ = [
-    'ZeroAgent',
-]
 
+logger = logging.getLogger('zeroTrainingLogger')
 
 class Branch:
     def __init__(self, prior):
@@ -143,23 +140,40 @@ class ZeroAgent(Agent):
             parent.add_child(move, new_node)
         return new_node
 
-    def train(self, experience, learning_rate, batch_size):
-        num_examples = experience.states.shape[0]
+    def train(self, generator, learning_rate, batch_size):
+        # num_examples = generator.states.shape[0]
+        # model_input = generator.states
+        # visit_sums = np.sum(generator.visit_counts, axis=1) \
+        #             .reshape((num_examples, 1))
+        # action_target = generator.visit_counts / visit_sums
+        # value_target = generator.rewards
 
-        model_input = experience.states
+        # self.model.compile(
+        #     tf.keras.optimizers.Adam(learning_rate=learning_rate),
+        #     loss=['categorical_crossentropy', 'huber_loss'])
+        # self.model.fit(
+        #     model_input, [action_target, value_target],
+        #     generator.generate(),
+        #     batch_size=batch_size)
 
-        visit_sums = np.sum(experience.visit_counts, axis=1) \
-                    .reshape((num_examples, 1))
-        action_target = experience.visit_counts / visit_sums
+        opt = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+        loss = ['categorical_crossentropy', 'huber_loss']
+        self.model.compile(optimizer=opt, loss=loss)
 
-        value_target = experience.rewards
+        logger.info(f'STEPS PER EPOCH: {len(generator)}')
+        logger.info(f'BATCH SIZE: {batch_size}')
 
-        self.model.compile(
-            SGD(lr=learning_rate),
-            loss=['categorical_crossentropy', 'huber_loss'])
-        self.model.fit(
-            model_input, [action_target, value_target],
-            batch_size=batch_size)
+        history = self.model.fit(
+            generator.generate(),
+            steps_per_epoch=len(generator),
+            batch_size=batch_size,
+            verbose=1,
+            epochs=1,
+            shuffle=False)
+
+        logger.info(f'Model name: {self.model.name}')
+        logger.info(f'Model inputs: {self.model.inputs}')
+        logger.info(f'Model outputs: {self.model.outputs}')
 
     def diagnostics(self):
         return {'value': self.last_state_value}

@@ -30,10 +30,10 @@ class GameRecord(namedtuple('GameRecord', 'moves winner')):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--board-size', '-size', type=int, default=19, required=True)
+    parser.add_argument('--board-size', '-size', type=int, default=19, required=False)
     parser.add_argument('--model1', '-m1', required=True)
     parser.add_argument('--model2', '-m2', required=True)
-    parser.add_argument('--num-games', '-n', type=int, default=100)
+    parser.add_argument('--num-games', '-n', type=int, default=100, required=False)
 
     args = parser.parse_args()
     board_size = args.board_size
