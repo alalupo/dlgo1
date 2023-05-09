@@ -64,7 +64,7 @@ class Dispatcher:
         self.model_path = model_path
         self.encoder = ZeroEncoder(self.board_size)
         self.limit = 1000
-        self.rounds_per_move = 100
+        self.rounds_per_move = 10
         self.exp_paths = []
 
     def run_simulations(self):
@@ -149,11 +149,12 @@ class Simulator:
         }
         m = 1
         while not game.is_over():
-            if m % 10 == 0:
+            if m % 2 == 0:
                 print(f'{int(np.ceil(m / 2))} : ', end='\r')
             next_move = agents[game.next_player].select_move(game)
             moves.append(next_move)
             game = game.apply_move(next_move)
+            m += 1
 
         # print_board(game.board)
         game_result = scoring.compute_game_result(game)

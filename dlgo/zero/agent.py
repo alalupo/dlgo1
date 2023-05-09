@@ -93,8 +93,7 @@ class ZeroAgent(Agent):
             root_state_tensor = self.encoder.encode(game_state)
             root_state_tensor = np.transpose(root_state_tensor, (1, 2, 0))
             visit_counts = np.array([
-                root.visit_count(
-                    self.encoder.decode_move_index(idx))
+                root.visit_count(self.encoder.decode_move_index(idx))
                 for idx in range(self.encoder.num_moves())
             ])
             self.collector.record_decision(

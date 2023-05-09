@@ -57,7 +57,7 @@ class ZeroExpWriter:
         if group_name in h5file.keys():
             h5file['experience/states'].resize((h5file['experience/states'].shape[0] + states.shape[0]), axis=0)
             h5file['experience/states'][-states.shape[0]:] = states
-            h5file['experience/visits'].resize((h5file['experience/actions'].shape[0] + visits.shape[0]), axis=0)
+            h5file['experience/visits'].resize((h5file['experience/visits'].shape[0] + visits.shape[0]), axis=0)
             h5file['experience/visits'][-visits.shape[0]:] = visits
             h5file['experience/rewards'].resize((h5file['experience/rewards'].shape[0] + rewards.shape[0]), axis=0)
             h5file['experience/rewards'][-rewards.shape[0]:] = rewards
@@ -67,5 +67,8 @@ class ZeroExpWriter:
                 name='states',
                 data=states,
                 maxshape=(None, self.board_size, self.board_size, self.num_planes))
-            h5file['experience'].create_dataset(name='visits', data=visits, maxshape=(None,))
+            h5file['experience'].create_dataset(
+                name='visits',
+                data=visits,
+                maxshape=(None, self.board_size * self.board_size + 1))
             h5file['experience'].create_dataset(name='rewards', data=rewards, maxshape=(None,))
