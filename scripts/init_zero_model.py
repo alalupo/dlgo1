@@ -1,9 +1,15 @@
 import argparse
 import logging.config
 import os
+import sys
 from pathlib import Path
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+this_directory = os.path.dirname(__file__)
+project_directory = os.path.dirname(this_directory)
+sys.path.append(project_directory)
+sys.path.append(this_directory)
 
 import h5py
 import tensorflow as tf
@@ -11,6 +17,9 @@ import tensorflow as tf
 keras = tf.keras
 from keras.optimizers import SGD, Adam
 from keras.models import Model, save_model
+
+from config import dlgo_directory
+sys.path.append(dlgo_directory)
 
 from dlgo.zero.encoder import ZeroEncoder
 from dlgo.networks.network_architectures import Network
@@ -28,7 +37,7 @@ def main():
     args = parser.parse_args()
     board_size = args.board_size
     model_name = args.model
-    model_path = str(Path.cwd() / 'models' / model_name)
+    model_path = str(Path(project_directory) / 'models' / model_name)
 
     initiator = Initiator(board_size, model_path)
     initiator.create_model()

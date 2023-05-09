@@ -36,14 +36,14 @@ def main():
     model_name = args.model
     experience_files = args.experience
 
-    model_path = str(Path.cwd() / 'models' / model_name)
+    model_path = str(Path(project_directory) / 'models' / model_name)
     exp_paths = []
     if isinstance(experience_files, (list, tuple)):
         for exp_file in experience_files:
-            exp_path = str(Path.cwd() / 'exp' / exp_file)
+            exp_path = str(Path(project_directory) / 'exp' / exp_file)
             exp_paths.append(exp_path)
     else:
-        exp_path = str(Path.cwd() / 'exp' / experience_files)
+        exp_path = str(Path(project_directory) / 'exp' / experience_files)
         exp_paths.append(exp_path)
 
     board_size = 19
