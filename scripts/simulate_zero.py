@@ -34,12 +34,9 @@ def cleaning(file):
 
 
 def check_and_modify_parameter(param):
-    # Check if the parameter contains the '_sp_' pattern
     if '_sp_' not in param:
-        # Find the 'model' pattern followed by an optional number and underscore
         match = re.search(r'(model\d*_)', param)
         if match:
-            # Insert '_sp_' after the matched pattern
             param = param.replace(match.group(), match.group() + 'sp_')
 
     return param
