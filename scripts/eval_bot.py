@@ -88,10 +88,13 @@ class Evaluator:
             game_record = self.simulate_game(black_player, white_player)
             if game_record.winner == color1:
                 wins += 1
+                print(f'Total result so far: {wins}/{wins + losses}')
             else:
                 losses += 1
             color1 = color1.other
-        print(f'Agent 1 record: {wins} / {wins + losses}')
+        print(f'*' * 40)
+        print(f'AGENT 1 FINAL RECORD: {wins} / {wins + losses}')
+        print(f'*' * 40)
 
     def simulate_game(self, black_player, white_player):
         moves = []
