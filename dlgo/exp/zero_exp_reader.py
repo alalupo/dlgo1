@@ -40,7 +40,7 @@ class ZeroExpReader:
                 visits = f['experience/visits'][batch_indices]
                 visits = visits.astype('float32')
                 visits_sums = np.sum(visits, axis=1)
-                print(f'visits_sum: {visits_sums}')
+
                 visits_sums = visits_sums.reshape(self.batch_size, 1)
                 action_target = visits / visits_sums
 

@@ -1,12 +1,13 @@
 import numpy as np
 import logging.config
 import tensorflow as tf
+
 keras = tf.keras
 
 from ..agent import Agent
 
-
 logger = logging.getLogger('zeroTrainingLogger')
+
 
 class Branch:
     def __init__(self, prior):
@@ -58,7 +59,7 @@ class ZeroTreeNode:
 
 
 class ZeroAgent(Agent):
-    def __init__(self, model, encoder, rounds_per_move=1600, c=2.0):
+    def __init__(self, model, encoder, rounds_per_move=100, c=2.0):
         super().__init__()
         self.model = model
         self.encoder = encoder
@@ -119,13 +120,16 @@ class ZeroAgent(Agent):
         state_tensor = self.encoder.encode(game_state)
         state_tensor = np.transpose(state_tensor, (1, 2, 0))
         model_input = np.array([state_tensor])
-        priors, values = self.model.predict(model_input, verbose=0)
+        # priors, values = self.model.predict(model_input, verbose=0)
+        priors, values = self.model(model_input)
+        priors = priors.numpy()
         priors = priors[0]
         # Add Dirichlet noise to the root node.
         if parent is None:
             noise = np.random.dirichlet(
                 0.03 * np.ones_like(priors))
             priors = 0.75 * priors + 0.25 * noise
+        values = values.numpy()
         value = values[0][0]
         move_priors = {
             self.encoder.decode_move_index(idx): p

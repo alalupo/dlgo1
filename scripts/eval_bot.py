@@ -18,10 +18,11 @@ project_directory = os.path.dirname(this_directory)
 sys.path.append(project_directory)
 sys.path.append(this_directory)
 
-from dlgo.agent.pg import PolicyAgent
 from dlgo import scoring
 from dlgo.encoders.base import get_encoder_by_name
 from dlgo.goboard_fast import GameState, Player
+from dlgo.zero.agent import ZeroAgent
+from dlgo.zero.encoder import ZeroEncoder
 
 
 class GameRecord(namedtuple('GameRecord', 'moves winner')):
@@ -53,7 +54,7 @@ class Evaluator:
         self.model1 = self.get_model(self.model1_path)
         self.model2 = self.get_model(self.model2_path)
         self.num_games = num_games
-        self.encoder = get_encoder_by_name('simple', self.board_size)
+        self.encoder = ZeroEncoder(self.board_size)
 
     @staticmethod
     def get_model_path(model):
@@ -72,14 +73,14 @@ class Evaluator:
 
     def play(self):
 
-        agent1 = PolicyAgent(self.model1, self.encoder)
-        agent2 = PolicyAgent(self.model2, self.encoder)
+        agent1 = ZeroAgent(self.model1, self.encoder)
+        agent2 = ZeroAgent(self.model2, self.encoder)
 
         wins = 0
         losses = 0
         color1 = Player.black
         for i in range(self.num_games):
-            print(f'Simulating game {i + 1} / {self.num_games}...')
+            print(f'Playing game {i + 1} / {self.num_games}...')
             if color1 == Player.black:
                 black_player, white_player = agent1, agent2
             else:

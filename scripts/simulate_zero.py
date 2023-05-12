@@ -1,9 +1,9 @@
 import argparse
 import logging.config
+import os
+import sys
 from collections import namedtuple
 from pathlib import Path
-import sys
-import os
 
 import h5py
 import numpy as np
@@ -20,7 +20,7 @@ sys.path.append(str(Path.cwd() / 'dlgo'))
 from dlgo import scoring
 from dlgo.goboard_fast import GameState
 from dlgo.gotypes import Player
-from dlgo.exp.zero_exp_writer import  ZeroExpWriter
+from dlgo.exp.zero_exp_writer import ZeroExpWriter
 from dlgo.zero.agent import ZeroAgent
 from dlgo.zero.encoder import ZeroEncoder
 
@@ -46,9 +46,9 @@ def main():
     logger.info(f'MODEL NAME: {model_name}')
     logger.info(f'GAMES: {num_games}')
 
-    model_path = Path.cwd() / 'models' / model_name
+    model_dir_path = Path.cwd() / 'models'
 
-    dispatcher = Dispatcher(19, num_games, model_path)
+    dispatcher = Dispatcher(19, num_games, model_dir_path, model_name)
     dispatcher.run_simulations()
     logger.info('SIMULATOR: Logging finished')
 
@@ -58,13 +58,15 @@ class GameRecord(namedtuple('GameRecord', 'moves winner margin')):
 
 
 class Dispatcher:
-    def __init__(self, board_size: int, num_games: int, model_path: Path):
+    def __init__(self, board_size: int, num_games: int, model_dir_path: Path, model_name: str):
         self.board_size = board_size
         self.num_games = num_games
-        self.model_path = model_path
+        self.model_dir_path = model_dir_path
+        self.model_name = model_name
+        self.model_path = Path(self.model_dir_path / self.model_name)
         self.encoder = ZeroEncoder(self.board_size)
         self.limit = 1000
-        self.rounds_per_move = 10
+        self.rounds_per_move = 100
         self.exp_paths = []
 
     def run_simulations(self):
@@ -74,7 +76,7 @@ class Dispatcher:
 
         for i in range(0, self.num_games, self.limit):
             games = min(self.num_games - i, self.limit)
-            simulator = Simulator(self.board_size, games, self.model_path)
+            simulator = Simulator(self.board_size, games, Path(self.model_dir_path / f'exp{i/self.limit}_{self.model_name}'))
             path = simulator.build_experience(agent, opponent)
             self.exp_paths.append(path)
 
@@ -99,12 +101,12 @@ class Dispatcher:
 
 
 class Simulator:
-    def __init__(self, board_size: int, num_games: int, model_path: Path):
+    def __init__(self, board_size: int, num_games: int, exp_path: Path):
         self.board_size = board_size
         self.encoder = ZeroEncoder(self.board_size)
         self.num_planes = self.encoder.num_planes
         self.num_games = num_games
-        self.exp_path = str(model_path).replace('models', 'exp').replace('model_', 'exp_')
+        self.exp_path = str(exp_path)
         cleaning(Path(self.exp_path))
 
     def build_experience(self, agent, opponent):
