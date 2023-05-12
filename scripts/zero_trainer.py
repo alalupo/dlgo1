@@ -36,6 +36,9 @@ def main():
     model_name = args.model
     experience_files = args.experience
 
+    if not '_sp_' in model_name:
+        raise ValueError("The name of the model should contain '_sp_' indicating that the model has self-played first.")
+
     model_path = str(Path(project_directory) / 'models' / model_name)
     exp_paths = []
     if isinstance(experience_files, (list, tuple)):
@@ -62,7 +65,8 @@ class ZeroTrainer:
         self.rounds_per_move = 50
         self.encoder = ZeroEncoder(self.board_size)
         self.model_sl_path = model_sl_path
-        self.model_rl_path = Path(str(self.model_sl_path).replace('_sl_', '_rl_'))
+        # '_rl_' for reinforced learning
+        self.model_rl_path = Path(str(self.model_sl_path).replace('_sp_', '_rl_'))
         self.learning_rate = 0.007
         self.exp_paths = []
         if isinstance(exp_paths, (list, tuple)):
