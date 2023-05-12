@@ -4,7 +4,6 @@ import os
 import sys
 from collections import namedtuple
 from pathlib import Path
-import re
 
 import h5py
 import numpy as np
@@ -33,16 +32,6 @@ def cleaning(file):
         Path.unlink(file)
 
 
-def check_and_modify_parameter(param):
-    if '_sp_' not in param:
-        match = re.search(r'(model\d*_)', param)
-        if match:
-            param = param.replace(match.group(), match.group() + 'sp_')
-
-    return param
-
-
-
 def main():
     logger.info('SIMULATOR: Logging started')
 
@@ -53,8 +42,6 @@ def main():
     args = parser.parse_args()
     model_name = args.model
     num_games = args.num_games
-
-    model_name = check_and_modify_parameter(model_name)
 
     logger.info(f'MODEL NAME: {model_name}')
     logger.info(f'GAMES: {num_games}')
@@ -89,7 +76,8 @@ class Dispatcher:
 
         for i in range(0, self.num_games, self.limit):
             games = min(self.num_games - i, self.limit)
-            simulator = Simulator(self.board_size, games, Path(self.model_dir_path / f'exp{i/self.limit}_{self.model_name}'))
+            simulator = Simulator(self.board_size, games,
+                                  Path(self.model_dir_path / f'exp{i / self.limit}_{self.model_name}'))
             path = simulator.build_experience(agent, opponent)
             self.exp_paths.append(path)
 

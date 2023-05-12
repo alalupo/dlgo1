@@ -3,6 +3,7 @@ import logging.config
 import os
 import sys
 from pathlib import Path
+import re
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -19,12 +20,23 @@ from keras.optimizers import SGD, Adam
 from keras.models import Model, save_model
 
 from config import dlgo_directory
+
 sys.path.append(dlgo_directory)
 
 from dlgo.zero.encoder import ZeroEncoder
 from dlgo.networks.network_architectures import Network
 
 logger = logging.getLogger('zeroTrainingLogger')
+
+
+def check_and_modify_parameter(param):
+    match = re.search(r'(model\d*_)', param)
+    if match:
+        if '_sp_' not in param:
+            param = param.replace(match.group(), match.group() + 'sp_')
+    else:
+        param = f'model_sp_{param}'
+    return param
 
 
 def main():
@@ -37,6 +49,9 @@ def main():
     args = parser.parse_args()
     board_size = args.board_size
     model_name = args.model
+
+    model_name = check_and_modify_parameter(model_name)
+
     model_path = str(Path(project_directory) / 'models' / model_name)
 
     initiator = Initiator(board_size, model_path)

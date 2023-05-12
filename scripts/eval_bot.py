@@ -19,7 +19,6 @@ sys.path.append(project_directory)
 sys.path.append(this_directory)
 
 from dlgo import scoring
-from dlgo.encoders.base import get_encoder_by_name
 from dlgo.goboard_fast import GameState, Player
 from dlgo.zero.agent import ZeroAgent
 from dlgo.zero.encoder import ZeroEncoder

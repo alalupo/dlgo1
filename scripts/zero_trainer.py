@@ -3,7 +3,6 @@ import logging.config
 import os
 import sys
 from pathlib import Path
-import re
 
 import h5py
 import tensorflow as tf
@@ -26,15 +25,6 @@ from dlgo.zero.encoder import ZeroEncoder
 logger = logging.getLogger('zeroTrainingLogger')
 
 
-def check_and_modify_parameter(param):
-    if '_sp_' not in param:
-        match = re.search(r'(model\d*_)', param)
-        if match:
-            param = param.replace(match.group(), match.group() + 'sp_')
-
-    return param
-
-
 def main():
     logger.info('TRAINER: STARTED')
 
@@ -45,8 +35,6 @@ def main():
     args = parser.parse_args()
     model_name = args.model
     experience_files = args.experience
-
-    model_name = check_and_modify_parameter(model_name)
 
     model_path = str(Path(project_directory) / 'models' / model_name)
     exp_paths = []
