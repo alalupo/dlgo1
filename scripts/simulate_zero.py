@@ -15,7 +15,7 @@ from keras.models import load_model
 project_path = Path(__file__).resolve().parent.parent
 os.chdir(project_path)
 sys.path.append(str(project_path))
-sys.path.append(str(Path.cwd() / 'dlgo'))
+sys.path.append(str(project_path / 'dlgo'))
 
 from dlgo import scoring
 from dlgo.goboard_fast import GameState

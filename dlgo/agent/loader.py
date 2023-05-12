@@ -10,7 +10,7 @@ from keras.models import load_model
 project_path = Path(__file__).resolve().parent.parent.parent
 os.chdir(project_path)
 sys.path.append(str(project_path))
-sys.path.append(str(Path.cwd() / 'dlgo'))
+sys.path.append(str(project_path / 'dlgo'))
 
 from dlgo.zero.agent import ZeroAgent
 from dlgo.agent.mcts_loader import MCTSLoader
