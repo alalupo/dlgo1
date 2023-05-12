@@ -4,6 +4,7 @@ import os
 import sys
 from collections import namedtuple
 from pathlib import Path
+import time
 
 import h5py
 import numpy as np
@@ -66,7 +67,6 @@ class Dispatcher:
         self.model_path = Path(self.model_dir_path / self.model_name)
         self.encoder = ZeroEncoder(self.board_size)
         self.limit = 1000
-        self.rounds_per_move = 100
         self.exp_paths = []
 
     def run_simulations(self):
@@ -77,7 +77,7 @@ class Dispatcher:
         for i in range(0, self.num_games, self.limit):
             games = min(self.num_games - i, self.limit)
             simulator = Simulator(self.board_size, games,
-                                  Path(self.model_dir_path / f'exp{i / self.limit}_{self.model_name}'))
+                                  Path(Path.cwd() / 'exp' / f'exp{i // self.limit}_{self.model_name}'))
             path = simulator.build_experience(agent, opponent)
             self.exp_paths.append(path)
 
@@ -88,7 +88,7 @@ class Dispatcher:
     def create_bot(self):
         print(f'>>> Creating bot for model {self.model_path}...')
         model = self.get_model()
-        return ZeroAgent(model, self.encoder, rounds_per_move=self.rounds_per_move, c=2.0)
+        return ZeroAgent(model, self.encoder, c=2.0)
 
     def get_model(self):
         model_file = None
@@ -120,6 +120,7 @@ class Simulator:
         color1 = Player.black
         for i in range(self.num_games):
             print(f'Simulating game {i + 1}/{self.num_games}...')
+            start = time.time()
             collector1.begin_episode()
             collector2.begin_episode()
 
@@ -138,6 +139,8 @@ class Simulator:
                 collector2.complete_episode(reward=1)
                 collector1.complete_episode(reward=-1)
             # color1 = color1.other
+            end = time.time()
+            print(f'Time elapsed: {end - start}')
 
         print(f'>>> {self.num_games} games completed.')
         print(f'>>> {len(collector1)} states saved.')
@@ -153,7 +156,7 @@ class Simulator:
         m = 1
         while not game.is_over():
             if m % 2 == 0:
-                print(f'{int(np.ceil(m / 2))} : ', end='\r')
+                print(f' >>> {int(np.ceil(m / 2))} : ', end='\r')
             next_move = agents[game.next_player].select_move(game)
             moves.append(next_move)
             game = game.apply_move(next_move)
