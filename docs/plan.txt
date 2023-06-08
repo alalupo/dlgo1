@@ -8,7 +8,7 @@ Pierwszy rozdział
     - kluczowe koncepcje i terminologia
     - funkcja polityki, funkcja wartości stanu, funkcja wartości akcji
     - metody rozwiązań (REINFORCE, Q-value, aktor-krytyk, self-play ?)
-4. Opis zasad działania  AlphaGo (2016) będącego punktem odniesienia dla niniejszego projektu.
+4. Opis zasad działania  AlphaGo (2016)
 5. Innowacje wprowadzone przez AlphaGoZero i AlphaZero.
 
 Drugi rozdział
