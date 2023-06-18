@@ -124,12 +124,13 @@ class Simulator:
             collector1.begin_episode()
             collector2.begin_episode()
 
-            if color1 == Player.black:
-                black_player, white_player = agent, opponent
-            else:
-                white_player, black_player = opponent, agent
+            # if color1 == Player.black:
+            #     black_player, white_player = agent, opponent
+            # else:
+            #     white_player, black_player = opponent, agent
 
-            game_record = self.simulate_game(black_player, white_player)
+            # game_record = self.simulate_game(black_player, white_player)
+            game_record = self.simulate_game(agent, opponent)
 
             print(f'Game {i + 1} is over. Saving the episode...')
             if game_record.winner == color1:
