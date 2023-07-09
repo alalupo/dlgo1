@@ -190,7 +190,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
                 var audio = new Audio('move.mp3');
                 audio.play();
             } else {
-                var audio = new Audio('swoosh.mp3');
+                var audio = new Audio('notification.mp3');
                 audio.play();
             }
         } else alert('Illegal move: ' + play.errorMsg);
@@ -216,11 +216,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         document.getElementById('status').innerHTML = text;
         document.getElementById('status').style.display = 'block';
         document.getElementById('spinner').style.display = 'none';
+
         if (botmove !== 'pass' && botmove !== 'resign') {
             var audio = new Audio('move.mp3');
             audio.play();
         } else {
-            var audio = new Audio('swoosh.mp3');
+            var audio = new Audio('notification.mp3');
             audio.play();
         }
 
