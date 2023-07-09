@@ -1,0 +1,100 @@
+===========================================================================================
+ALPHAGO:
+===========================================================================================
+
+SCRIPTS:
+
+policy_sl_trainer.py -> strong policy supervised learning ~ odpowiednik: trainer.py
+policy_sl_trainer.py -> fast policy supervised learning (alternatywnie użyć tej samej sieci)
+simulate.py (???) ~ odpowiednik self_play.py
+policy_rl_trainer.py ~ odpowiednik train_ac.py
+value_rl_trainer.py
+
+***********************
+* policy_sl_trainer.py:
+***********************
+
+from dlgo.data.data_processor import GoDataProcessor
+from dlgo.encoders.base import get_encoder_by_name
+from dlgo.networks.network_architectures import FastPolicyNetwork, StrongPolicyNetwork
+
+*********************
+* simulate.py:
+*********************
+
+from dlgo import scoring
+from dlgo.goboard_fast import GameState
+from dlgo.gotypes import Player
+from dlgo.exp.exp_writer import ExpWriter
+from dlgo.agent.pg import PolicyAgent
+from dlgo.encoders.base import get_encoder_by_name
+
+***********************
+* policy_rl_trainer.py:
+***********************
+
+from dlgo.agent.pg import PolicyAgent
+from dlgo.encoders.base import get_encoder_by_name
+from dlgo.exp.exp_reader import ExpReader
+
+***********************
+* value_rl_trainer.py:
+***********************
+
+from dlgo.encoders.base import get_encoder_by_name
+from dlgo.networks.network_architectures import ValueNetwork
+from dlgo.rl.value_agent import ValueAgent
+from dlgo.exp.exp_reader import ExpReader
+
+
+*********************
+* eval_ac_bot.py:
+*********************
+
+???
+
+===========================================================================================
+ALPHAGO ZERO:
+===========================================================================================
+
+SCRIPTS:
+
+init_zero_model.py
+simulate_zero.py
+zero_trainer.py
+eval_bot.py
+
+*********************
+* init_zero_model.py:
+*********************
+
+from dlgo.zero.encoder import ZeroEncoder
+from dlgo.networks.network_architectures import Network
+
+*********************
+* simulate_zero.py:
+*********************
+
+from dlgo import scoring
+from dlgo.goboard_fast import GameState
+from dlgo.gotypes import Player
+from dlgo.exp.zero_exp_writer import ZeroExpWriter
+from dlgo.zero.agent import ZeroAgent
+from dlgo.zero.encoder import ZeroEncoder
+
+*********************
+* zero_trainer.py:
+*********************
+
+from dlgo.exp.zero_exp_reader import ZeroExpReader
+from dlgo.zero.agent import ZeroAgent
+from dlgo.zero.encoder import ZeroEncoder
+
+*********************
+* eval_bot.py:
+*********************
+
+from dlgo import scoring
+from dlgo.goboard_fast import GameState, Player
+from dlgo.zero.agent import ZeroAgent
+from dlgo.zero.encoder import ZeroEncoder

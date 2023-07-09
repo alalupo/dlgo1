@@ -2,16 +2,19 @@ Pierwszy rozdział
 
 1. Gra w go - rys historyczny oraz opisanie zasad gry
 2. Zarys historii zastosowania AI do gier, a w szczególności do go
-3. Metody uczenia maszynowego i uczenie przez wzmacnianie - wstęp ogólny
+3. Opis zasad działania  AlphaGo (2016)
+4. Innowacje wprowadzone przez AlphaGoZero i AlphaZero.
+
+Drugi rozdział
+
+Metody uczenia maszynowego i uczenie przez wzmacnianie - wstęp ogólny
 - uczenie nadzorowane
 - uczenie przez wzmacnianie
     - kluczowe koncepcje i terminologia
     - funkcja polityki, funkcja wartości stanu, funkcja wartości akcji
     - metody rozwiązań (REINFORCE, Q-value, aktor-krytyk, self-play ?)
-4. Opis zasad działania  AlphaGo (2016)
-5. Innowacje wprowadzone przez AlphaGoZero i AlphaZero.
 
-Drugi rozdział
+Trzeci rozdział
 
 1. Omówienie sposobu implementacji zasad gry w go w Pythonie (struktury danych, główne klasy reprezentujące graczy, planszę, ruchy, układy kamieni itp)
 2. Omówienie struktury całego projektu (agenci, rodzaje sieci, kod do gry z innymi botami, kod do gry z ludźmi itp)
