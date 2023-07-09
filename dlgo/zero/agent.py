@@ -59,7 +59,7 @@ class ZeroTreeNode:
 
 
 class ZeroAgent(Agent):
-    def __init__(self, model, encoder, rounds_per_move=70, c=2.0):
+    def __init__(self, model, encoder, rounds_per_move=20, c=2.0):
         super().__init__()
         self.model = model
         self.encoder = encoder

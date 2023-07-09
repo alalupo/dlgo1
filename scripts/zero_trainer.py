@@ -59,7 +59,6 @@ class ZeroTrainer:
         self.board_size = board_size
         self.batch_size = 1024
         # Optimally, a few hundred rounds per move
-        self.rounds_per_move = 50
         self.encoder = ZeroEncoder(self.board_size)
         self.model_sl_path = model_sl_path
         # '_rl_' for reinforced learning
