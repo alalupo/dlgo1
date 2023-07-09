@@ -28,10 +28,10 @@ class Loader:
         self.agent_name = name
         self.encoder = get_encoder_by_name('simple', 19)
         self.zero_model_name = 'model_sl_zero_v1.h5'
-        self.pg_model_name = 'model_sl_strong_improved_100_1_epoch1.h5'
-        self.predict_model_name = 'model_sl_strong_improved_100_1_epoch1.h5'
-        self.q_model_name = 'model_sl_strong_improved_100_1_epoch1.h5'
-        self.ac_model_name = 'model_sl_strong_improved_100_1_epoch1.h5'
+        self.pg_model_name = 'model_sl_strong_improved3_10000_1_epoch1_24proc.h5'
+        self.predict_model_name = 'model_sl_strong_improved3_10000_1_epoch1_24proc.h5'
+        self.q_model_name = 'model_sl_strong_improved3_10000_1_epoch1_24proc.h5'
+        self.ac_model_name = 'model_sl_strong_improved3_10000_1_epoch1_24proc.h5'
         self.model_dir = Path.cwd() / 'models'
         self.model = self.get_model()
 
