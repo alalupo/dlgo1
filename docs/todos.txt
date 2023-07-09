@@ -1,3 +1,5 @@
 wyświetlanie wyniku
 pasowanie
 poddawanie się
+pythonanywhere? ogs?
+cały proces AlphaGo do końca, wraz z rl
